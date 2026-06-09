@@ -716,7 +716,7 @@ export default function Board() {
                             cursor: 'pointer'
                           }}>
                             <span>소리</span>
-                            <input name="audioFile" id={`audio-input-${m.id}`} type="file" accept="audio/*" 
+                            <input name="audioFile" id={`audio-input-${m.id}`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf" 
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
@@ -1089,7 +1089,7 @@ export default function Board() {
                   cursor: 'pointer'
                 }}>
                   <span>소리</span>
-                  <input name="audioFile" id={`audio-input-${m.id}-modal`} type="file" accept="audio/*" 
+                  <input name="audioFile" id={`audio-input-${m.id}-modal`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf" 
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
@@ -1646,7 +1646,7 @@ export default function Board() {
                             cursor: 'pointer'
                           }}>
                             <span>소리</span>
-                            <input name="audioFile" id={`audio-input-${m.id}-desktop`} type="file" accept="audio/*" 
+                            <input name="audioFile" id={`audio-input-${m.id}-desktop`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf" 
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
