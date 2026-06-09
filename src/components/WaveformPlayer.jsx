@@ -90,6 +90,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <button 
+          type="button"
           onClick={togglePlay}
           disabled={!audioUrl}
           style={{ 
