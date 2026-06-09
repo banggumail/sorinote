@@ -8,11 +8,69 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { getDb } from './db.js';
 import dotenv from 'dotenv';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 // Load environment variables
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const execPromise = promisify(exec);
+
+// Helper function to check audio codec and transcode if needed (e.g., ALAC -> AAC, CAF -> M4A)
+async function checkAndTranscodeAudio(file) {
+  const filePath = file.path;
+  const ext = path.extname(filePath).toLowerCase();
+  
+  // 1. If it's a .caf file, transcode it to .m4a (standard AAC)
+  if (ext === '.caf') {
+    console.log(`.caf audio detected. Transcoding to M4A...`);
+    const newFilename = file.filename.replace(/\.caf$/i, '.m4a');
+    const newFilePath = path.join(path.dirname(filePath), newFilename);
+    
+    try {
+      const ffmpegCmd = `ffmpeg -y -i "${filePath}" -c:a aac -b:a 192k "${newFilePath}"`;
+      await execPromise(ffmpegCmd);
+      
+      // Delete original .caf file
+      await fs.promises.unlink(filePath);
+      
+      // Update file object properties
+      file.path = newFilePath;
+      file.filename = newFilename;
+      file.mimetype = 'audio/mp4';
+      return { success: true, originalNameExtension: '.m4a' };
+    } catch (err) {
+      console.error('Error transcoding .caf to .m4a:', err);
+    }
+  }
+  
+  // 2. If it's a .m4a file, check if codec is ALAC and transcode to AAC in-place
+  if (ext === '.m4a') {
+    try {
+      const ffprobeCmd = `ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
+      const { stdout } = await execPromise(ffprobeCmd);
+      const codec = stdout.trim();
+      
+      if (codec === 'alac') {
+        console.log(`ALAC audio detected inside M4A. Transcoding to AAC...`);
+        const tempPath = filePath + '.tmp.m4a';
+        const ffmpegCmd = `ffmpeg -y -i "${filePath}" -c:a aac -b:a 192k "${tempPath}"`;
+        await execPromise(ffmpegCmd);
+        
+        // Replace original file with the transcoded one
+        await fs.promises.rename(tempPath, filePath);
+        console.log(`Transcoding successful. Replaced original ALAC file with AAC.`);
+      }
+    } catch (err) {
+      console.error('Error checking/transcoding ALAC to AAC:', err);
+    }
+  }
+  
+  return null;
+}
+
 
 // Ensure uploads directory exists
 const uploadsDir = process.env.UPLOAD_DIR 
@@ -255,12 +313,28 @@ app.delete('/api/pads/:padId', async (req, res) => {
 });
 
 // File upload endpoint
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
+  
   // Convert filename encoding from latin1 to utf-8 to support Korean/Unicode characters properly
-  const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+  let originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+  
+  // Transcode audio if necessary (ALAC -> AAC, CAF -> M4A)
+  try {
+    if (req.file.mimetype.startsWith('audio/') || ['.m4a', '.caf'].includes(path.extname(req.file.originalname).toLowerCase())) {
+      const transcodeResult = await checkAndTranscodeAudio(req.file);
+      if (transcodeResult && transcodeResult.originalNameExtension) {
+        // Update original filename extension to match transcoded file
+        const originalExt = path.extname(originalName);
+        originalName = originalName.substring(0, originalName.length - originalExt.length) + transcodeResult.originalNameExtension;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to process/transcode uploaded audio:', err);
+  }
+
   // Return the relative URL of the file
   const fileUrl = `/uploads/${req.file.filename}`;
   res.json({ fileUrl, originalName });
