@@ -1,0 +1,185 @@
+# Sorinote (소리노트) 설치 가이드
+
+본 문서는 데비안 12 (Debian 12) 및 Nginx 환경의 서버에 소리노트를 단독 서비스로 설치하고 구동하는 단계를 상세히 설명합니다.
+
+---
+
+## 1. 사전 준비 작업
+
+서버에 필요한 도구가 설치되어 있는지 확인하고 미설치된 도구는 설치한다.
+
+### 1-1. Node.js 설치 (방식 A 이용 시 필요)
+Node.js v20 이상 버전을 설치한다.
+```bash
+# NodeSource를 통한 Node.js 20 LTS 설치 (Debian)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+### 1-2. Docker 및 Compose 설치 (방식 B 이용 시 필요)
+```bash
+# Docker 공식 리포지토리를 통한 설치
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+---
+
+## 2. 배포 진행 (원하는 방식 선택)
+
+---
+
+### [선택 1] 방식 A: PM2를 이용한 네이티브 배포
+
+#### 단계 1: 소스 코드 배치
+서버의 배포 경로로 소스 코드를 가져온다. (예: `/var/www/sorinote`)
+```bash
+cd /var/www/sorinote
+```
+
+#### 단계 2: 의존성 패키지 설치
+루트 디렉토리에서 아래 명령어를 실행하여 프론트엔드와 백엔드의 모든 의존성을 자동으로 설치한다.
+```bash
+npm run setup
+```
+
+#### 단계 3: 환경 변수 설정
+템플릿 파일을 복사하여 환경 변수 파일 `.env`를 생성한다.
+```bash
+cp .env.example .env
+```
+필요한 경우 `.env` 파일을 편집기로 열어 설정값을 수정한다. (기본 포트: 3000)
+```env
+PORT=3000
+DATABASE_PATH=database.sqlite
+UPLOAD_DIR=uploads
+```
+
+#### 단계 4: 프론트엔드 정적 파일 빌드
+React 프론트엔드를 빌드한다. 빌드된 정적 리소스는 `dist` 폴더에 생성되며, 백엔드가 직접 호스팅한다.
+```bash
+npm run build
+```
+
+#### 단계 5: PM2 프로세스 매니저 설치 및 무중단 실행
+서버가 항상 켜져 있고 오류 발생 시 자동 재시작되도록 PM2로 애플리케이션을 구동한다.
+```bash
+# PM2 전역 설치
+sudo npm install -g pm2
+
+# 프로덕션 환경 변수를 적용하여 실행
+pm2 start ecosystem.config.cjs --env production
+```
+
+#### 단계 6: 서버 부팅 시 자동 실행 설정
+서버가 재부팅되어도 소리노트가 자동으로 켜지도록 systemd 서비스로 등록한다.
+```bash
+# 시스템 시작 스크립트 생성 명령 실행
+pm2 startup
+```
+*주의: 위 명령어를 실행하면 터미널 화면 맨 아래에 `sudo env PATH=...`로 시작하는 한 줄짜리 명령어가 출력된다. 그 명령어를 그대로 복사하여 터미널에 실행해야 설정이 완료된다.*
+
+```bash
+# 최종 완료 후 프로세스 목록 저장
+pm2 save
+```
+
+---
+
+### [선택 2] 방식 B: Docker Compose를 이용한 배포
+
+서버에 Node.js 등을 직접 설치하지 않고 컨테이너 기술로 간편하게 실행하는 방식이다.
+
+#### 단계 1: 도커 컨테이너 빌드 및 백그라운드 구동
+프로젝트 루트 경로에서 아래 명령어를 입력한다.
+```bash
+sudo docker compose up -d --build
+```
+
+#### 단계 2: 데이터 영속화 상태 확인
+- 컨테이너가 실행되면 루트 디렉토리에 `./data` 폴더가 자동으로 생성된다.
+- DB 파일(`database.sqlite`)과 업로드된 오디오/이미지 파일들이 이 `./data` 폴더 안에 저장된다.
+- **백업 시**: 서버 컴퓨터의 `./data` 디렉토리 전체만 백업하면 모든 데이터가 보존된다.
+
+---
+
+## 3. Nginx 역방향 프록시 및 SSL(HTTPS) 설정
+
+외부에서 도메인을 통해 안전하게 접속할 수 있도록 Nginx 프록시와 SSL 암호화를 적용한다.
+
+### 단계 3-1: Nginx 가상 호스트 설정 파일 생성
+설정 파일을 생성하고 텍스트 편집기(예: `nano`)로 연다.
+```bash
+sudo nano /etc/nginx/sites-available/sorinote
+```
+
+### 단계 3-2: Nginx 설정 입력
+아래 내용을 붙여넣는다. (도메인은 실제 도메인으로 변경한다.)
+
+> [!IMPORTANT]
+> 실시간 상호작용은 WebSockets를 사용하므로 `/socket.io/` 경로에 `Upgrade` 헤더를 반드시 설정해야 한다. 설정 누락 시 실시간 커서 및 메모 싱크가 동작하지 않는다.
+
+```nginx
+server {
+    server_name sorinote.2bpencil.online; # 본인 도메인 주소 기입
+
+    # 웹 애플리케이션 프록시 설정
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # 실시간 웹소켓(Socket.IO) 프록시 설정
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400; # 끊김 방지
+    }
+
+    # 대용량 미디어 파일 업로드 허용 (예: 오디오 녹음본 업로드용)
+    client_max_body_size 50M;
+
+    listen 80;
+}
+```
+
+### 단계 3-3: 설정 활성화 및 Nginx 재시작
+```bash
+# 가상 호스트 활성화 (심볼릭 링크 생성)
+sudo ln -sf /etc/nginx/sites-available/sorinote /etc/nginx/sites-enabled/
+
+# Nginx 문법 검사
+sudo nginx -t
+
+# 정상 확인 후 Nginx 재부팅
+sudo systemctl restart nginx
+```
+
+### 단계 3-4: Certbot으로 HTTPS/SSL 자동 적용
+도메인에 SSL 인증서를 설치하여 보안 접속(HTTPS)을 활성화한다.
+```bash
+sudo apt-get install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d sorinote.2bpencil.online
+```
+인증서 갱신 시 Nginx가 자동 재로드되어 상시 무중단 보안 연결을 유지한다.

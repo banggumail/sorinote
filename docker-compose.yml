@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  sorinote:
+    build: .
+    container_name: sorinote
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persistent volume mapping for database and uploaded media files
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/app/data/database.sqlite
+      - UPLOAD_DIR=/app/data/uploads
