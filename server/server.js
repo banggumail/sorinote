@@ -113,6 +113,8 @@ app.post('/api/admin/set-password', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
 // Helper to get directory size recursively
 async function getDirSize(dirPath) {
   let size = 0;
