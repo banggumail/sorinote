@@ -489,6 +489,10 @@ export default function Board() {
     if (socketRef.current) {
       socketRef.current.emit('memo:publish', { padId, memo: updatedMemo });
     }
+
+    if (isMobile) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const updateScrollFromMinimap = (clientX, clientY) => {
