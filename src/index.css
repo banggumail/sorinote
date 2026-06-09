@@ -691,7 +691,7 @@ body { margin: 0; }
 
 .mobile-feed-container {
   flex: 1;
-  padding: 16px;
+  padding: 16px 16px 80px 16px;
   display: flex;
   flex-direction: column;
   gap: 20px;
