@@ -90,6 +90,7 @@ export default function Admin() {
   const [settingsMode, setSettingsMode] = useState('menu'); // 'menu' | 'change' | 'remove'
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [storageSize, setStorageSize] = useState(null);
 
   const navigate = useNavigate();
 
@@ -209,6 +210,24 @@ export default function Admin() {
       .catch(err => console.error('Error loading pads:', err));
   };
 
+  const loadStorageSize = () => {
+    fetch(`${API_BASE}/api/admin/storage-size`)
+      .then(res => res.json())
+      .then(data => {
+        setStorageSize(data);
+      })
+      .catch(err => console.error('Error loading storage size:', err));
+  };
+
+  const formatBytes = (bytes) => {
+    if (bytes === undefined || bytes === null) return '0 B';
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
   useEffect(() => {
     document.title = 'sorinote_admin';
     fetch(`${API_BASE}/api/settings`)
@@ -220,6 +239,7 @@ export default function Admin() {
       })
       .catch(err => console.error('Error loading settings:', err));
     loadPads();
+    loadStorageSize();
 
     // Check password status
     fetch(`${API_BASE}/api/admin/has-password`)
@@ -419,7 +439,7 @@ export default function Admin() {
 
         {/* Admin Background and Font color pickers above Main Settings Box */}
         <div className="admin-header-row">
-          <div className="admin-header-pickers">
+          <div className="admin-header-pickers" style={{ flexWrap: 'wrap', gap: '15px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: adminTextColor }}>admin_bg:</span>
               <input 
@@ -438,6 +458,21 @@ export default function Admin() {
                 style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
               />
             </div>
+            {storageSize && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: adminTextColor, border: `1px solid rgba(128,128,128,0.3)`, padding: '2px 8px', background: 'rgba(128,128,128,0.05)', fontFamily: 'monospace' }}>
+                <span>db: {formatBytes(storageSize.dbSize)}</span>
+                <span>/</span>
+                <span>uploads: {formatBytes(storageSize.uploadsSize)}</span>
+                <button 
+                  type="button" 
+                  onClick={loadStorageSize} 
+                  className="admin-btn"
+                  style={{ padding: '0 4px', fontSize: '10px', height: '18px', display: 'inline-flex', alignItems: 'center', marginLeft: '4px' }}
+                >
+                  refresh
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Settings Menu Trigger and Popover */}

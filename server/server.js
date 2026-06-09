@@ -113,6 +113,45 @@ app.post('/api/admin/set-password', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+// Helper to get directory size recursively
+async function getDirSize(dirPath) {
+  let size = 0;
+  try {
+    const files = await fs.promises.readdir(dirPath, { withFileTypes: true });
+    for (const file of files) {
+      const filePath = path.join(dirPath, file.name);
+      if (file.isDirectory()) {
+        size += await getDirSize(filePath);
+      } else {
+        const stats = await fs.promises.stat(filePath);
+        size += stats.size;
+      }
+    }
+  } catch (err) {
+    // Ignore error if directory doesn't exist
+  }
+  return size;
+}
+
+// Get storage size of database and uploads
+app.get('/api/admin/storage-size', async (req, res) => {
+  try {
+    const dbPath = process.env.DATABASE_PATH
+      ? (path.isAbsolute(process.env.DATABASE_PATH) ? process.env.DATABASE_PATH : path.resolve(__dirname, process.env.DATABASE_PATH))
+      : path.join(__dirname, 'database.sqlite');
+
+    let dbSize = 0;
+    if (fs.existsSync(dbPath)) {
+      const dbStats = await fs.promises.stat(dbPath);
+      dbSize = dbStats.size;
+    }
+
+    const uploadsSize = await getDirSize(uploadsDir);
+
+    res.json({ dbSize, uploadsSize });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get Home settings
