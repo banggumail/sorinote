@@ -376,6 +376,16 @@ io.on('connection', (socket) => {
     socketUsers[socket.id] = { padId, user };
     console.log(`User ${user.name} joined room: ${padId}`);
 
+    // Update any locks held by this socket to the new username
+    if (activeLocks[padId]) {
+      Object.entries(activeLocks[padId]).forEach(([memoId, lockInfo]) => {
+        if (lockInfo.socketId === socket.id) {
+          lockInfo.username = user.name;
+          socket.to(padId).emit('memo:locked', { id: Number(memoId), username: user.name });
+        }
+      });
+    }
+
     // Send currently active locks in this room to the newly joined user
     if (activeLocks[padId]) {
       const locks = {};

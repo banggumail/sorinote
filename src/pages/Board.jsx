@@ -433,6 +433,11 @@ export default function Board() {
   const handleDeleteMemo = (id) => {
     if (deleteConfirmMemoId === id) {
       setMemos(prev => prev.filter(m => m.id !== id));
+      setLockedMemos(prev => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       if (activeMemoId === id) setActiveMemoId(null);
       setDeleteConfirmMemoId(null);
       
@@ -522,6 +527,11 @@ export default function Board() {
     };
     
     setMemos(prev => prev.map(m => m.id === id ? updatedMemo : m));
+    setLockedMemos(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     
     if (socketRef.current) {
       socketRef.current.emit('memo:publish', { padId, memo: updatedMemo });
@@ -682,12 +692,22 @@ export default function Board() {
                         onClick={() => {
                           if (m.title === '' && m.content === '') {
                             setMemos(memos.filter(memo => memo.id !== m.id));
+                            setLockedMemos(prev => {
+                              const next = { ...prev };
+                              delete next[m.id];
+                              return next;
+                            });
                             if (activeMemoId === m.id) setActiveMemoId(null);
                             if (socketRef.current) {
                               socketRef.current.emit('memo:delete', { padId, id: m.id });
                             }
                           } else {
                             setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isEditing: false } : memo));
+                            setLockedMemos(prev => {
+                              const next = { ...prev };
+                              delete next[m.id];
+                              return next;
+                            });
                             if (socketRef.current) {
                               socketRef.current.emit('memo:edit-end', { padId, id: m.id });
                             }
@@ -1038,12 +1058,22 @@ export default function Board() {
               onClick={() => {
                 if (m.title === '' && m.content === '') {
                   setMemos(memos.filter(memo => memo.id !== m.id));
+                  setLockedMemos(prev => {
+                    const next = { ...prev };
+                    delete next[m.id];
+                    return next;
+                  });
                   if (activeMemoId === m.id) setActiveMemoId(null);
                   if (socketRef.current) {
                     socketRef.current.emit('memo:delete', { padId, id: m.id });
                   }
                 } else {
                   setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isEditing: false } : memo));
+                  setLockedMemos(prev => {
+                    const next = { ...prev };
+                    delete next[m.id];
+                    return next;
+                  });
                   if (socketRef.current) {
                     socketRef.current.emit('memo:edit-end', { padId, id: m.id });
                   }
@@ -1620,6 +1650,11 @@ export default function Board() {
                     <button onClick={() => {
                       if (m.title === '' && m.content === '') {
                         setMemos(memos.filter(memo => memo.id !== m.id));
+                        setLockedMemos(prev => {
+                          const next = { ...prev };
+                          delete next[m.id];
+                          return next;
+                        });
                         if (activeMemoId === m.id) setActiveMemoId(null);
                         
                         if (socketRef.current) {
@@ -1627,7 +1662,11 @@ export default function Board() {
                         }
                       } else {
                         setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isEditing: false } : memo));
-                        
+                        setLockedMemos(prev => {
+                          const next = { ...prev };
+                          delete next[m.id];
+                          return next;
+                        });
                         if (socketRef.current) {
                           socketRef.current.emit('memo:edit-end', { padId, id: m.id });
                         }
