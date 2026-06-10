@@ -174,6 +174,12 @@ export default function Board() {
   useEffect(() => {
     setZoomLevel(prev => {
       if (Math.abs(prev - minZoomRef.current) < 0.005) {
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollLeft = 0;
+            scrollRef.current.scrollTop = 0;
+          }
+        }, 10);
         return minZoom;
       }
       return Math.max(minZoom, prev);
@@ -313,8 +319,13 @@ export default function Board() {
     const newOffsetX = Math.max(0, (viewportSize.width - CANVAS_SIZE * newZoom) / 2);
     const newOffsetY = Math.max(0, (viewportSize.height - CANVAS_SIZE * newZoom) / 2);
 
-    const newScrollLeft = cx * newZoom + newOffsetX - viewportSize.width / 2;
-    const newScrollTop = cy * newZoom + newOffsetY - viewportSize.height / 2;
+    let newScrollLeft = cx * newZoom + newOffsetX - viewportSize.width / 2;
+    let newScrollTop = cy * newZoom + newOffsetY - viewportSize.height / 2;
+
+    if (Math.abs(newZoom - minZoom) < 0.005) {
+      newScrollLeft = 0;
+      newScrollTop = 0;
+    }
 
     setZoomLevel(newZoom);
     
