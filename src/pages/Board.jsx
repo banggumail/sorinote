@@ -145,7 +145,11 @@ export default function Board() {
   const minimapRef = useRef(null); 
 
   const [highestZ, setHighestZ] = useState(100);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(() => {
+    const initialWidth = window.innerWidth;
+    const initialHeight = window.innerHeight - 60;
+    return Math.min(Math.max(400, initialWidth - 40) / CANVAS_SIZE, Math.max(300, initialHeight - 180) / CANVAS_SIZE);
+  });
   const [canvasBgColor, setCanvasBgColor] = useState('#FDFBF7');
   const [outerBgColor, setOuterBgColor] = useState('#E0E0D0');
   const [activeMemoId, setActiveMemoId] = useState(null);
