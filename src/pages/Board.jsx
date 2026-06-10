@@ -174,18 +174,21 @@ export default function Board() {
   useEffect(() => {
     setZoomLevel(prev => {
       if (Math.abs(prev - minZoomRef.current) < 0.005) {
-        setTimeout(() => {
-          if (scrollRef.current) {
-            scrollRef.current.scrollLeft = 0;
-            scrollRef.current.scrollTop = 0;
-          }
-        }, 10);
         return minZoom;
       }
       return Math.max(minZoom, prev);
     });
     minZoomRef.current = minZoom;
   }, [minZoom]);
+
+  // Centering & Scroll reset when at minimum zoom
+  useEffect(() => {
+    if (scrollRef.current && zoomLevel <= minZoom + 0.005) {
+      scrollRef.current.scrollLeft = 0;
+      scrollRef.current.scrollTop = 0;
+      setScrollPos({ left: 0, top: 0 });
+    }
+  }, [viewportSize, zoomLevel, minZoom]);
 
   // Load Pad Data from API
   useEffect(() => {
