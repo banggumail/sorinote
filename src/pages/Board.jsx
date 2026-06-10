@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import WaveformPlayer from '../components/WaveformPlayer';
 import { io } from 'socket.io-client';
@@ -142,7 +142,8 @@ export default function Board() {
   const [scrollPos, setScrollPos] = useState({ left: 0, top: 0 });
   const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight - 60 }); 
   const scrollRef = useRef(null);
-  const [scrollElement, setScrollElement] = useState(null);
+  const resizeObserverRef = useRef(null);
+  const scrollPosRef = useRef({ left: 0, top: 0 });
   const minimapRef = useRef(null); 
 
   const [highestZ, setHighestZ] = useState(100);
@@ -160,16 +161,29 @@ export default function Board() {
   const offsetY = Math.max(0, (viewportSize.height - CANVAS_SIZE * zoomLevel) / 2);
   const uiScale = Math.min(1, Math.max(0.71, viewportSize.width / 1920));
 
-  useEffect(() => {
-    if (!scrollElement) return;
-    const observer = new ResizeObserver(entries => {
-      for (let entry of entries) {
-        setViewportSize({ width: entry.contentRect.width, height: entry.contentRect.height });
-      }
-    });
-    observer.observe(scrollElement);
-    return () => observer.disconnect();
-  }, [scrollElement]);
+  const scrollRefCallback = useCallback((el) => {
+    if (resizeObserverRef.current) {
+      resizeObserverRef.current.disconnect();
+      resizeObserverRef.current = null;
+    }
+    
+    scrollRef.current = el;
+    
+    if (el) {
+      el.scrollLeft = scrollPosRef.current.left;
+      el.scrollTop = scrollPosRef.current.top;
+      
+      const observer = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+            setViewportSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+          }
+        }
+      });
+      observer.observe(el);
+      resizeObserverRef.current = observer;
+    }
+  }, []);
 
   const minZoomRef = useRef(minZoom);
   useEffect(() => {
@@ -187,9 +201,10 @@ export default function Board() {
     if (scrollRef.current && zoomLevel <= minZoom + 0.005) {
       scrollRef.current.scrollLeft = 0;
       scrollRef.current.scrollTop = 0;
+      scrollPosRef.current = { left: 0, top: 0 };
       setScrollPos({ left: 0, top: 0 });
     }
-  }, [viewportSize, zoomLevel, minZoom, scrollElement]);
+  }, [viewportSize, zoomLevel, minZoom]);
 
   // Load Pad Data from API
   useEffect(() => {
@@ -343,7 +358,10 @@ export default function Board() {
 
   const handleScroll = () => {
     if (scrollRef.current) {
-      setScrollPos({ left: scrollRef.current.scrollLeft, top: scrollRef.current.scrollTop });
+      const left = scrollRef.current.scrollLeft;
+      const top = scrollRef.current.scrollTop;
+      scrollPosRef.current = { left, top };
+      setScrollPos({ left, top });
     }
   };
 
@@ -1476,10 +1494,7 @@ export default function Board() {
       })()}
 
       <div 
-        ref={(el) => {
-          scrollRef.current = el;
-          setScrollElement(el);
-        }}
+        ref={scrollRefCallback}
         onScroll={handleScroll}
         className="hide-scrollbar" 
         style={{ flex: 1, overflow: 'auto', position: 'relative' }}
