@@ -353,11 +353,12 @@ export default function Admin() {
     }
   };
 
-  const handleUpdateWorld = (id, newCanvasBg, newOuterBg, newTitleColor, newIsPrivate) => {
+  const handleUpdateWorld = (id, newTitle, newCanvasBg, newOuterBg, newTitleColor, newIsPrivate) => {
     fetch(`${API_BASE}/api/pads/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        title: newTitle,
         canvasBgColor: newCanvasBg,
         outerBgColor: newOuterBg,
         titleColor: newTitleColor,
@@ -957,7 +958,21 @@ export default function Admin() {
                   {editingPadId === pad.id && (
                     <div className="admin-edit-panel">
                       <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        title <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
+                        name 
+                        <input 
+                          type="text" 
+                          value={pad.title} 
+                          onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].title = e.target.value;
+                            setRecentPads(newPads);
+                          }} 
+                          style={{ padding: '2px 4px', fontSize: '12px', border: '1px solid #ccc', background: 'transparent', color: adminTextColor, width: '100px', fontFamily: 'inherit' }}
+                        />
+                      </label>
+                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                        title_color <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
                           const newPads = [...recentPads];
                           const idx = newPads.findIndex(p => p.id === pad.id);
                           newPads[idx].titleColor = e.target.value;
@@ -989,7 +1004,7 @@ export default function Admin() {
                         }} style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
                       </label>
                       <button onClick={() => {
-                        handleUpdateWorld(pad.id, pad.canvasBgColor || '#FDFBF7', pad.outerBgColor || '#E0E0D0', pad.titleColor || '#0056b3', pad.isPrivate === 1);
+                        handleUpdateWorld(pad.id, pad.title, pad.canvasBgColor || '#FDFBF7', pad.outerBgColor || '#E0E0D0', pad.titleColor || '#0056b3', pad.isPrivate === 1);
                         setEditingPadId(null);
                       }} className="admin-btn" style={{ padding: '2px 8px', fontSize: '12px' }}>save</button>
                     </div>
@@ -1084,41 +1099,57 @@ export default function Admin() {
 
                 {/* 5. Edit panel */}
                 {editingPadId === pad.id && (
-                  <div className="admin-edit-panel" style={{ width: '100%', marginTop: '4px' }}>
-                    <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                      title <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
-                        const newPads = [...recentPads];
-                        const idx = newPads.findIndex(p => p.id === pad.id);
-                        newPads[idx].titleColor = e.target.value;
-                        setRecentPads(newPads);
-                      }} style={{ width: '18px', height: '18px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} />
+                  <div className="admin-edit-panel" style={{ width: '100%', marginTop: '4px', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                    <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', width: '100%' }}>
+                      name 
+                      <input 
+                        type="text" 
+                        value={pad.title} 
+                        onChange={e => {
+                          const newPads = [...recentPads];
+                          const idx = newPads.findIndex(p => p.id === pad.id);
+                          newPads[idx].title = e.target.value;
+                          setRecentPads(newPads);
+                        }} 
+                        style={{ padding: '2px 4px', fontSize: '12px', border: '1px solid #ccc', background: 'transparent', color: adminTextColor, flex: 1, fontFamily: 'inherit' }}
+                      />
                     </label>
-                    <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                      canvas <input type="color" value={pad.canvasBgColor || '#FDFBF7'} onChange={e => {
-                        const newPads = [...recentPads];
-                        const idx = newPads.findIndex(p => p.id === pad.id);
-                        newPads[idx].canvasBgColor = e.target.value;
-                        setRecentPads(newPads);
-                      }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
-                    </label>
-                    <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                      background <input type="color" value={pad.outerBgColor || '#E0E0D0'} onChange={e => {
-                        const newPads = [...recentPads];
-                        const idx = newPads.findIndex(p => p.id === pad.id);
-                        newPads[idx].outerBgColor = e.target.value;
-                        setRecentPads(newPads);
-                      }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
-                    </label>
-                    <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
-                      private <input type="checkbox" checked={pad.isPrivate === 1} onChange={e => {
-                        const newPads = [...recentPads];
-                        const idx = newPads.findIndex(p => p.id === pad.id);
-                        newPads[idx].isPrivate = e.target.checked ? 1 : 0;
-                        setRecentPads(newPads);
-                      }} style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
-                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', width: '100%' }}>
+                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                        title_color <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
+                          const newPads = [...recentPads];
+                          const idx = newPads.findIndex(p => p.id === pad.id);
+                          newPads[idx].titleColor = e.target.value;
+                          setRecentPads(newPads);
+                        }} style={{ width: '18px', height: '18px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} />
+                      </label>
+                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                        canvas <input type="color" value={pad.canvasBgColor || '#FDFBF7'} onChange={e => {
+                          const newPads = [...recentPads];
+                          const idx = newPads.findIndex(p => p.id === pad.id);
+                          newPads[idx].canvasBgColor = e.target.value;
+                          setRecentPads(newPads);
+                        }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
+                      </label>
+                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                        background <input type="color" value={pad.outerBgColor || '#E0E0D0'} onChange={e => {
+                          const newPads = [...recentPads];
+                          const idx = newPads.findIndex(p => p.id === pad.id);
+                          newPads[idx].outerBgColor = e.target.value;
+                          setRecentPads(newPads);
+                        }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
+                      </label>
+                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
+                        private <input type="checkbox" checked={pad.isPrivate === 1} onChange={e => {
+                          const newPads = [...recentPads];
+                          const idx = newPads.findIndex(p => p.id === pad.id);
+                          newPads[idx].isPrivate = e.target.checked ? 1 : 0;
+                          setRecentPads(newPads);
+                        }} style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
+                      </label>
+                    </div>
                     <button onClick={() => {
-                      handleUpdateWorld(pad.id, pad.canvasBgColor || '#FDFBF7', pad.outerBgColor || '#E0E0D0', pad.titleColor || '#0056b3', pad.isPrivate === 1);
+                      handleUpdateWorld(pad.id, pad.title, pad.canvasBgColor || '#FDFBF7', pad.outerBgColor || '#E0E0D0', pad.titleColor || '#0056b3', pad.isPrivate === 1);
                       setEditingPadId(null);
                     }} className="admin-btn" style={{ padding: '2px 8px', fontSize: '12px', width: '100%', marginTop: '8px' }}>save</button>
                   </div>

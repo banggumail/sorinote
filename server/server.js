@@ -288,10 +288,10 @@ app.put('/api/pads/:padId', async (req, res) => {
   try {
     const db = await getDb();
     const { padId } = req.params;
-    const { canvasBgColor, outerBgColor, titleColor, isPrivate } = req.body;
+    const { title, canvasBgColor, outerBgColor, titleColor, isPrivate } = req.body;
     await db.run(
-      'UPDATE pads SET canvasBgColor = ?, outerBgColor = ?, titleColor = ?, isPrivate = ? WHERE id = ?',
-      canvasBgColor, outerBgColor, titleColor, isPrivate ? 1 : 0, padId
+      'UPDATE pads SET title = ?, canvasBgColor = ?, outerBgColor = ?, titleColor = ?, isPrivate = ? WHERE id = ?',
+      title, canvasBgColor, outerBgColor, titleColor, isPrivate ? 1 : 0, padId
     );
     res.json({ success: true });
   } catch (error) {
