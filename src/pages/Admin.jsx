@@ -894,9 +894,13 @@ export default function Admin() {
           {recentPads.map(pad => (
             <li key={pad.id} className="pad-list-item">
               {/* Desktop Layout */}
-              <div className="admin-pad-row desktop-only" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '15px', flexWrap: 'wrap' }}>
-                  <span className="pad-date" style={{ color: adminTextColor }}>{pad.date}</span>
+              <div className="admin-pad-row desktop-only" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', width: '100%' }}>
+                {/* Date Column */}
+                <span className="pad-date" style={{ color: adminTextColor, flexShrink: 0, marginTop: '4px' }}>{pad.date}</span>
+
+                {/* Info Column */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', flex: 1 }}>
+                  {/* Title and Private Badge */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => navigate(`/${pad.id}`)}
@@ -936,60 +940,23 @@ export default function Admin() {
                     )}
                   </div>
 
-                  <div className="admin-pad-actions" style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button 
-                      onClick={() => handleCopyUrl(pad.id)}
-                      className="admin-btn copy-url-btn"
-                    >
-                      copy url
-                    </button>
-                    {editingPadId === pad.id ? (
-                      <button onClick={() => setEditingPadId(null)} className="admin-btn">
-                        cancel
-                      </button>
-                    ) : (
-                      <button onClick={() => setEditingPadId(pad.id)} className="admin-btn">
-                        edit
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteWorld(pad.id)}
-                      className="admin-btn"
-                      style={{
-                        color: deleteConfirmId === pad.id ? 'white' : 'red',
-                        backgroundColor: deleteConfirmId === pad.id ? '#d9534f' : 'transparent',
-                        borderColor: deleteConfirmId === pad.id ? '#d43f3a' : '#ccc',
-                        fontWeight: deleteConfirmId === pad.id ? 'bold' : 'normal'
-                      }}
-                    >
-                      {deleteConfirmId === pad.id ? 'confirm' : 'delete'}
-                    </button>
-                  </div>
-                </div>
+                  {/* URL */}
+                  <span className="pad-url" style={{ color: adminTextColor }}>
+                    {window.location.origin}/{pad.id}
+                  </span>
 
-                <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
-                    <div className="desktop-only-spacer" style={{ flexShrink: 0 }}>
-                      <span className="pad-date" style={{ visibility: 'hidden', display: 'inline-block' }}>
-                        {pad.date}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <span className="pad-url" style={{ color: adminTextColor }}>
-                        {window.location.origin}/{pad.id}
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', marginTop: '2px' }}>
-                        <span>note {pad.memoCount || 0}</span>
-                        <span>·</span>
-                        <span>sound {pad.soundCount || 0}</span>
-                        <span>·</span>
-                        <span>scene {pad.sceneCount || 0}</span>
-                      </div>
-                    </div>
+                  {/* Stats */}
+                  <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace' }}>
+                    <span>note {pad.memoCount || 0}</span>
+                    <span>·</span>
+                    <span>sound {pad.soundCount || 0}</span>
+                    <span>·</span>
+                    <span>scene {pad.sceneCount || 0}</span>
                   </div>
 
+                  {/* Edit panel */}
                   {editingPadId === pad.id && (
-                    <div className="admin-edit-panel">
+                    <div className="admin-edit-panel" style={{ marginTop: '8px' }}>
                       <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
                         name 
                         <input 
@@ -1042,6 +1009,37 @@ export default function Admin() {
                       }} className="admin-btn" style={{ padding: '2px 8px', fontSize: '12px' }}>save</button>
                     </div>
                   )}
+                </div>
+
+                {/* Actions Column */}
+                <div className="admin-pad-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', marginTop: '4px' }}>
+                  <button 
+                    onClick={() => handleCopyUrl(pad.id)}
+                    className="admin-btn copy-url-btn"
+                  >
+                    copy url
+                  </button>
+                  {editingPadId === pad.id ? (
+                    <button onClick={() => setEditingPadId(null)} className="admin-btn">
+                      cancel
+                    </button>
+                  ) : (
+                    <button onClick={() => setEditingPadId(pad.id)} className="admin-btn">
+                      edit
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteWorld(pad.id)}
+                    className="admin-btn"
+                    style={{
+                      color: deleteConfirmId === pad.id ? 'white' : 'red',
+                      backgroundColor: deleteConfirmId === pad.id ? '#d9534f' : 'transparent',
+                      borderColor: deleteConfirmId === pad.id ? '#d43f3a' : '#ccc',
+                      fontWeight: deleteConfirmId === pad.id ? 'bold' : 'normal'
+                    }}
+                  >
+                    {deleteConfirmId === pad.id ? 'confirm' : 'delete'}
+                  </button>
                 </div>
               </div>
 

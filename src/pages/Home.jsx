@@ -141,62 +141,57 @@ export default function Home() {
             {recentPads.map(pad => (
                <li key={pad.id} className="pad-list-item">
                 {/* Desktop Layout */}
-                <div className="admin-pad-row desktop-only" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '15px', flexWrap: 'wrap' }}>
-                    <span className="pad-date" style={{ color: normalTextColor }}>{pad.date}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => navigate(`/${pad.id}`)}
-                        className="pad-title-btn"
-                        style={{
-                          background: getComplementaryColor(pad.titleColor || '#0056b3'),
-                          color: pad.titleColor || '#0056b3',
-                          width: 'fit-content'
-                        }}
-                      >
-                        {pad.title}
-                      </button>
+                <div className="admin-pad-row desktop-only" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', width: '100%' }}>
+                  {/* Date Column */}
+                  <span className="pad-date" style={{ color: normalTextColor, flexShrink: 0, marginTop: '4px' }}>{pad.date}</span>
+
+                  {/* Info Column */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', flex: 1 }}>
+                    {/* Title */}
+                    <button
+                      onClick={() => navigate(`/${pad.id}`)}
+                      className="pad-title-btn"
+                      style={{
+                        background: getComplementaryColor(pad.titleColor || '#0056b3'),
+                        color: pad.titleColor || '#0056b3',
+                        width: 'fit-content'
+                      }}
+                    >
+                      {pad.title}
+                    </button>
+                    
+                    {/* URL */}
+                    <span className="pad-url" style={{ color: normalTextColor }}>
+                      {window.location.origin}/{pad.id}
+                    </span>
+                    
+                    {/* Stats */}
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace' }}>
+                      <span>note {pad.memoCount || 0}</span>
+                      <span>·</span>
+                      <span>sound {pad.soundCount || 0}</span>
+                      <span>·</span>
+                      <span>scene {pad.sceneCount || 0}</span>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
-                      <div className="desktop-only-spacer" style={{ flexShrink: 0 }}>
-                        <span className="pad-date" style={{ visibility: 'hidden', display: 'inline-block' }}>
-                          {pad.date}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <span className="pad-url" style={{ color: normalTextColor }}>
-                          {window.location.origin}/{pad.id}
-                        </span>
-                        <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace', marginTop: '2px' }}>
-                          <span>note {pad.memoCount || 0}</span>
-                          <span>·</span>
-                          <span>sound {pad.soundCount || 0}</span>
-                          <span>·</span>
-                          <span>scene {pad.sceneCount || 0}</span>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => handleCopyUrl(pad.id)}
-                        className="admin-btn copy-url-btn"
-                        style={{
-                          padding: '2px 8px',
-                          fontSize: '11px',
-                          height: '22px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          flexShrink: 0,
-                          lineHeight: '1',
-                          marginLeft: 'auto',
-                          marginTop: '2px'
-                        }}
-                      >
-                        copy url
-                      </button>
-                    </div>
-                  </div>
+                  {/* Copy URL Button Column */}
+                  <button 
+                    onClick={() => handleCopyUrl(pad.id)}
+                    className="admin-btn copy-url-btn"
+                    style={{
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      height: '22px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      flexShrink: 0,
+                      lineHeight: '1',
+                      marginTop: '4px'
+                    }}
+                  >
+                    copy url
+                  </button>
                 </div>
 
                 {/* Mobile Layout (Order: Date -> Title -> URL -> Menu) */}
