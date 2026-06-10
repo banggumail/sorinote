@@ -142,6 +142,7 @@ export default function Board() {
   const [scrollPos, setScrollPos] = useState({ left: 0, top: 0 });
   const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight - 60 }); 
   const scrollRef = useRef(null);
+  const [scrollElement, setScrollElement] = useState(null);
   const minimapRef = useRef(null); 
 
   const [highestZ, setHighestZ] = useState(100);
@@ -160,15 +161,15 @@ export default function Board() {
   const uiScale = Math.min(1, Math.max(0.71, viewportSize.width / 1920));
 
   useEffect(() => {
-    if (!scrollRef.current) return;
+    if (!scrollElement) return;
     const observer = new ResizeObserver(entries => {
       for (let entry of entries) {
         setViewportSize({ width: entry.contentRect.width, height: entry.contentRect.height });
       }
     });
-    observer.observe(scrollRef.current);
+    observer.observe(scrollElement);
     return () => observer.disconnect();
-  }, []);
+  }, [scrollElement]);
 
   const minZoomRef = useRef(minZoom);
   useEffect(() => {
@@ -188,7 +189,7 @@ export default function Board() {
       scrollRef.current.scrollTop = 0;
       setScrollPos({ left: 0, top: 0 });
     }
-  }, [viewportSize, zoomLevel, minZoom]);
+  }, [viewportSize, zoomLevel, minZoom, scrollElement]);
 
   // Load Pad Data from API
   useEffect(() => {
@@ -1475,7 +1476,10 @@ export default function Board() {
       })()}
 
       <div 
-        ref={scrollRef}
+        ref={(el) => {
+          scrollRef.current = el;
+          setScrollElement(el);
+        }}
         onScroll={handleScroll}
         className="hide-scrollbar" 
         style={{ flex: 1, overflow: 'auto', position: 'relative' }}
