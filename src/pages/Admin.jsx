@@ -315,7 +315,23 @@ export default function Admin() {
       .then(data => {
         if (data.success) {
           setSettings(draftSettings);
-          alert('설정이 저장되었습니다.');
+          alert('홈페이지 설정이 저장되었습니다.');
+        }
+      })
+      .catch(err => console.error('Error updating settings:', err));
+  };
+
+  const handleSaveAdminSettings = () => {
+    fetch(`${API_BASE}/api/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draftSettings)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setSettings(draftSettings);
+          alert('어드민 설정이 저장되었습니다.');
         }
       })
       .catch(err => console.error('Error updating settings:', err));
@@ -459,6 +475,13 @@ export default function Admin() {
                 style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
               />
             </div>
+            <button
+              onClick={handleSaveAdminSettings}
+              className="admin-btn"
+              style={{ padding: '4px 10px', fontSize: '14px' }}
+            >
+              save
+            </button>
             {storageSize && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: adminTextColor, border: `1px solid rgba(128,128,128,0.3)`, padding: '2px 8px', background: 'rgba(128,128,128,0.05)', fontFamily: 'monospace' }}>
                 <span>db: {formatBytes(storageSize.dbSize)}</span>
