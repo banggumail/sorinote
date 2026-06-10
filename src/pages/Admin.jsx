@@ -454,36 +454,10 @@ export default function Admin() {
     <div className="app-container" style={{ background: draftSettings.adminBgColor }}>
       <div className="app-content">
 
-        {/* Admin Background and Font color pickers above Main Settings Box */}
         <div className="admin-header-row">
-          <div className="admin-header-pickers" style={{ flexWrap: 'wrap', gap: '15px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: adminTextColor }}>admin_bg:</span>
-              <input 
-                type="color" 
-                value={draftSettings.adminBgColor} 
-                onChange={(e) => updateDraftSetting('adminBgColor', e.target.value)} 
-                style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: adminTextColor }}>admin_font_color:</span>
-              <input 
-                type="color" 
-                value={draftSettings.adminFontColor || '#ffffff'} 
-                onChange={(e) => updateDraftSetting('adminFontColor', e.target.value)} 
-                style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
-              />
-            </div>
-            <button
-              onClick={handleSaveAdminSettings}
-              className="admin-btn"
-              style={{ padding: '4px 10px', fontSize: '14px' }}
-            >
-              save
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {storageSize && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: adminTextColor, border: `1px solid rgba(128,128,128,0.3)`, padding: '2px 8px', background: 'rgba(128,128,128,0.05)', fontFamily: 'monospace' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: adminTextColor, fontFamily: 'monospace' }}>
                 <span>db: {formatBytes(storageSize.dbSize)}</span>
                 <span>/</span>
                 <span>uploads: {formatBytes(storageSize.uploadsSize)}</span>
@@ -497,6 +471,33 @@ export default function Admin() {
                 </button>
               </div>
             )}
+            <div className="admin-header-pickers" style={{ flexWrap: 'wrap', gap: '15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: adminTextColor }}>admin_bg:</span>
+                <input 
+                  type="color" 
+                  value={draftSettings.adminBgColor} 
+                  onChange={(e) => updateDraftSetting('adminBgColor', e.target.value)} 
+                  style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: adminTextColor }}>admin_font_color:</span>
+                <input 
+                  type="color" 
+                  value={draftSettings.adminFontColor || '#ffffff'} 
+                  onChange={(e) => updateDraftSetting('adminFontColor', e.target.value)} 
+                  style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
+                />
+              </div>
+              <button
+                onClick={handleSaveAdminSettings}
+                className="admin-btn"
+                style={{ padding: '4px 10px', fontSize: '14px' }}
+              >
+                save
+              </button>
+            </div>
           </div>
 
           {/* Settings Menu Trigger and Popover */}
