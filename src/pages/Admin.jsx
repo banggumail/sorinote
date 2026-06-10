@@ -968,15 +968,24 @@ export default function Admin() {
                 </div>
 
                 <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '15px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
                     <div className="desktop-only-spacer" style={{ flexShrink: 0 }}>
                       <span className="pad-date" style={{ visibility: 'hidden', display: 'inline-block' }}>
                         {pad.date}
                       </span>
                     </div>
-                    <span className="pad-url" style={{ color: adminTextColor }}>
-                      {window.location.origin}/{pad.id}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <span className="pad-url" style={{ color: adminTextColor }}>
+                        {window.location.origin}/{pad.id}
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', marginTop: '2px' }}>
+                        <span>note {pad.memoCount || 0}</span>
+                        <span>·</span>
+                        <span>sound {pad.soundCount || 0}</span>
+                        <span>·</span>
+                        <span>scene {pad.sceneCount || 0}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {editingPadId === pad.id && (
@@ -1117,9 +1126,18 @@ export default function Admin() {
                 </div>
 
                 {/* 4. URL */}
-                <span className="pad-url" style={{ color: adminTextColor, wordBreak: 'break-all' }}>
-                  {window.location.origin}/{pad.id}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span className="pad-url" style={{ color: adminTextColor, wordBreak: 'break-all' }}>
+                    {window.location.origin}/{pad.id}
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', marginTop: '2px' }}>
+                    <span>note {pad.memoCount || 0}</span>
+                    <span>·</span>
+                    <span>sound {pad.soundCount || 0}</span>
+                    <span>·</span>
+                    <span>scene {pad.sceneCount || 0}</span>
+                  </div>
+                </div>
 
                 {/* 5. Edit panel */}
                 {editingPadId === pad.id && (

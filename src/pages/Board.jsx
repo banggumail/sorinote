@@ -598,9 +598,9 @@ export default function Board() {
           }}>
             <span>note {memoCount}</span>
             <span>·</span>
-            <span>소리 {soundCount}</span>
+            <span>sound {soundCount}</span>
             <span>·</span>
-            <span>장면 {sceneCount}</span>
+            <span>scene {sceneCount}</span>
           </div>
           {sortedMemos.map(m => {
             const textColor = getContrastColor(m.color);
@@ -1420,9 +1420,9 @@ export default function Board() {
           <div style={{ fontSize: '11px', color: '#666', fontFamily: 'monospace', display: 'flex', gap: '6px', whiteSpace: 'nowrap', width: '100%', justifyContent: 'center', borderTop: '1px solid #eee', paddingTop: '8px' }}>
             <span>note {memoCount}</span>
             <span>·</span>
-            <span>소리 {soundCount}</span>
+            <span>sound {soundCount}</span>
             <span>·</span>
-            <span>장면 {sceneCount}</span>
+            <span>scene {sceneCount}</span>
           </div>
         </div>
       </div>

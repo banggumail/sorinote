@@ -241,7 +241,16 @@ app.post('/api/settings', async (req, res) => {
 app.get('/api/pads', async (req, res) => {
   try {
     const db = await getDb();
-    const rows = await db.all('SELECT * FROM pads ORDER BY date DESC');
+    const rows = await db.all(`
+      SELECT p.*,
+             COUNT(m.id) AS memoCount,
+             COALESCE(SUM(CASE WHEN m.audioUrl IS NOT NULL AND m.audioUrl != '' THEN 1 ELSE 0 END), 0) AS soundCount,
+             COALESCE(SUM(CASE WHEN m.imageUrl IS NOT NULL AND m.imageUrl != '' THEN 1 ELSE 0 END), 0) AS sceneCount
+      FROM pads p
+      LEFT JOIN memos m ON p.id = m.padId
+      GROUP BY p.id
+      ORDER BY p.date DESC
+    `);
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
