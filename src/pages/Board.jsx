@@ -1907,7 +1907,7 @@ export default function Board() {
                       )}
                       
                       {m.isExpanded && (
-                        <div style={{ color: m.contentColor || textColor, fontSize: `${14}px`, lineHeight: '1.6', wordBreak: 'break-all', marginTop: '10px' }}>
+                        <div style={{ color: m.contentColor || textColor, fontSize: `${14}px`, lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
                           {m.content}
                         </div>
                       )}
