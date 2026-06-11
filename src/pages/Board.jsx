@@ -1050,7 +1050,7 @@ export default function Board() {
             flexShrink: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.18)'
           }}>
-            <span style={{ fontSize: '11px', fontFamily: 'monospace', opacity: 0.8 }}>
+            <span style={{ fontSize: '14px', fontFamily: 'monospace', opacity: 0.8 }}>
               {m.date || getFormattedDate()}
             </span>
             <button 
@@ -1124,7 +1124,7 @@ export default function Board() {
                   borderBottom: `2px solid ${borderColor}`,
                   color: m.titleColor || textColor,
                   background: 'none',
-                  fontSize: '18px',
+                  fontSize: '15px',
                   fontWeight: 'bold',
                   outline: 'none',
                   paddingBottom: '4px'
@@ -1636,11 +1636,11 @@ export default function Board() {
               >
                 <div style={{ display: 'flex', flex: 1, alignItems: 'center', minWidth: 0 }}>
                   {m.author && (
-                    <span style={{ fontSize: `${16}px`, fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {m.author} {isLocked && `(수정 중: ${lockedMemos[m.id]})`}
                     </span>
                   )}
-                  <span style={{ fontSize: `${13}px`, fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: 'auto', marginRight: '8px', opacity: 0.8 }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: 'auto', marginRight: '8px', opacity: 0.8 }}>
                     {m.date || getFormattedDate()}
                   </span>
                 </div>
@@ -1697,7 +1697,7 @@ export default function Board() {
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input name="t" placeholder="제목" defaultValue={m.title} required style={{ flex: 1, border: 'none', borderBottom: `1px solid ${borderColor}`, color: m.titleColor || textColor, background: 'none', fontSize: `${18}px`, fontWeight: 'normal', flexShrink: 0, minWidth: 0 }} />
+                        <input name="t" placeholder="제목" defaultValue={m.title} required style={{ flex: 1, border: 'none', borderBottom: `1px solid ${borderColor}`, color: m.titleColor || textColor, background: 'none', fontSize: '15px', fontWeight: 'normal', flexShrink: 0, minWidth: 0 }} />
                         <input 
                           className="square-color-picker"
                           type="color" 
@@ -1820,7 +1820,7 @@ export default function Board() {
                         {m.imageUrl && (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                              <span style={{ fontSize: `${10}px`, color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                              <span style={{ fontSize: '10px', color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                                 {m.imageFileName}
                               </span>
                               <button 
@@ -1854,7 +1854,7 @@ export default function Board() {
                         )}
                       </div>
                       
-                      <textarea name="c" placeholder="내용..." defaultValue={m.content} required style={{ border: `1px solid ${borderColor}`, color: m.contentColor || textColor, background: 'transparent', flex: 1, minHeight: '150px', resize: 'none', fontSize: `${18}px`, padding: '14px' }} />
+                      <textarea name="c" placeholder="내용..." defaultValue={m.content} required style={{ border: `1px solid ${borderColor}`, color: m.contentColor || textColor, background: 'transparent', flex: 1, minHeight: '150px', resize: 'none', fontSize: '13px', padding: '14px' }} />
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justify: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -1888,7 +1888,7 @@ export default function Board() {
                   <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
                       <div style={{ paddingBottom: '0px', marginBottom: '0px', flexShrink: 0 }}>
-                        <div style={{ fontSize: `${18}px`, fontWeight: 'normal', color: m.titleColor || textColor, marginBottom: '8px' }}>{m.title}</div>
+                        <div style={{ fontSize: '15px', fontWeight: 'normal', color: m.titleColor || textColor, marginBottom: '8px' }}>{m.title}</div>
                       </div>
 
                       {m.audioUrl && (
@@ -1899,7 +1899,7 @@ export default function Board() {
                       
                       {m.imageUrl && (
                         <div style={{ marginTop: '5px', marginBottom: '5px' }}>
-                          <div style={{ fontSize: `${10}px`, color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
+                          <div style={{ fontSize: '10px', color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
                             {m.imageFileName}
                           </div>
                           <img src={getResolvedImageUrl(m.imageUrl)} alt="Uploaded" style={{ width: '100%', objectFit: 'contain', marginBottom: '8px', }} />
@@ -1907,7 +1907,7 @@ export default function Board() {
                       )}
                       
                       {m.isExpanded && (
-                        <div style={{ color: m.contentColor || textColor, fontSize: `${14}px`, lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
+                        <div style={{ color: m.contentColor || textColor, fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
                           {m.content}
                         </div>
                       )}

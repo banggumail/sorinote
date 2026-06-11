@@ -742,7 +742,7 @@ body {
 }
 
 .mobile-memo-date {
-  font-size: 11px;
+  font-size: 14px;
   font-family: monospace;
   white-space: nowrap;
   overflow: hidden;
@@ -780,7 +780,7 @@ body {
 }
 
 .mobile-memo-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
   margin-bottom: 4px;
 }
@@ -808,7 +808,7 @@ body {
 }
 
 .mobile-memo-content {
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1.6;
   word-break: break-all;
   white-space: pre-wrap;
@@ -858,7 +858,7 @@ body {
   border: none;
   border-bottom: 1px solid;
   background: none;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
   outline: none;
   padding-bottom: 4px;
@@ -876,7 +876,7 @@ body {
   background: transparent;
   min-height: 120px;
   resize: none;
-  font-size: 15px;
+  font-size: 13px;
   padding: 10px;
   box-sizing: border-box;
   outline: none;
