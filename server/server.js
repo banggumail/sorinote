@@ -10,6 +10,7 @@ import { getDb } from './db.js';
 import dotenv from 'dotenv';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
+import sharp from 'sharp';
 
 // Load environment variables
 dotenv.config();
@@ -154,6 +155,36 @@ async function extractPeaksAndDuration(filePath) {
   }
 }
 
+// Resize image to max 800px width and convert to WebP using sharp
+async function processImage(file) {
+  const filePath = file.path;
+  const ext = path.extname(filePath).toLowerCase();
+  
+  if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+    const newFilename = file.filename.substring(0, file.filename.length - ext.length) + '.webp';
+    const newFilePath = path.join(path.dirname(filePath), newFilename);
+    
+    try {
+      await sharp(filePath)
+        .resize({ width: 800, withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toFile(newFilePath);
+      
+      // Delete original image file
+      await fs.promises.unlink(filePath);
+      
+      // Update file object properties
+      file.path = newFilePath;
+      file.filename = newFilename;
+      file.mimetype = 'image/webp';
+      
+      return { success: true, originalNameExtension: '.webp' };
+    } catch (err) {
+      console.error('Error processing image with sharp:', err);
+    }
+  }
+  return null;
+}
 
 // Ensure uploads directory exists
 const uploadsDir = process.env.UPLOAD_DIR 
@@ -429,8 +460,9 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   // Convert filename encoding from latin1 to utf-8 to support Korean/Unicode characters properly
   let originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
   
-  // Transcode audio if necessary (ALAC -> AAC, CAF -> M4A)
+  // Transcode audio or process image if necessary
   let isAudio = false;
+  let isImage = false;
   try {
     const ext = path.extname(req.file.originalname).toLowerCase();
     if (req.file.mimetype.startsWith('audio/') || ['.m4a', '.caf', '.mp3', '.wav', '.ogg', '.aac', '.flac'].includes(ext)) {
@@ -441,9 +473,17 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         const originalExt = path.extname(originalName);
         originalName = originalName.substring(0, originalName.length - originalExt.length) + transcodeResult.originalNameExtension;
       }
+    } else if (req.file.mimetype.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+      isImage = true;
+      const imageResult = await processImage(req.file);
+      if (imageResult && imageResult.originalNameExtension) {
+        // Update original filename extension to match webp image
+        const originalExt = path.extname(originalName);
+        originalName = originalName.substring(0, originalName.length - originalExt.length) + imageResult.originalNameExtension;
+      }
     }
   } catch (err) {
-    console.error('Failed to process/transcode uploaded audio:', err);
+    console.error('Failed to process/transcode uploaded file:', err);
   }
 
   // Return the relative URL of the file
@@ -673,8 +713,75 @@ async function migrateExistingAudioPeaks() {
   }
 }
 
+async function migrateExistingImages() {
+  try {
+    const db = await getDb();
+    const memosWithImages = await db.all(`
+      SELECT id, imageUrl, imageFileName 
+      FROM memos 
+      WHERE imageUrl LIKE '/uploads/%' 
+        AND imageUrl NOT LIKE '%.webp'
+    `);
+
+    if (memosWithImages.length === 0) {
+      return;
+    }
+
+    console.log(`[Migration] Found ${memosWithImages.length} memos with non-WebP images. Resizing and converting to WebP...`);
+
+    for (const memo of memosWithImages) {
+      const relativePath = memo.imageUrl.replace(/^\//, '');
+      const filePath = path.join(__dirname, relativePath);
+
+      if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+          const newFilename = path.basename(filePath).replace(new RegExp(`${ext}$`, 'i'), '.webp');
+          const newRelativePath = path.dirname(relativePath) + '/' + newFilename;
+          const newFilePath = path.join(__dirname, newRelativePath);
+
+          console.log(`[Migration] Processing image for Memo #${memo.id} (${memo.imageFileName})...`);
+          
+          try {
+            await sharp(filePath)
+              .resize({ width: 800, withoutEnlargement: true })
+              .webp({ quality: 80 })
+              .toFile(newFilePath);
+
+            // Delete original file
+            await fs.promises.unlink(filePath);
+
+            // Update DB references
+            const newDbUrl = '/' + newRelativePath;
+            const originalNameWithoutExt = memo.imageFileName 
+              ? memo.imageFileName.substring(0, memo.imageFileName.length - ext.length)
+              : 'image';
+            const newDbFileName = originalNameWithoutExt + '.webp';
+
+            await db.run(
+              'UPDATE memos SET imageUrl = ?, imageFileName = ? WHERE id = ?',
+              newDbUrl,
+              newDbFileName,
+              memo.id
+            );
+            console.log(`[Migration] Successfully converted Memo #${memo.id} image to WebP.`);
+          } catch (processErr) {
+            console.error(`[Migration] Failed to process image for Memo #${memo.id}:`, processErr);
+          }
+        }
+      } else {
+        console.warn(`[Migration] Image file for Memo #${memo.id} does not exist at ${filePath}`);
+      }
+    }
+    console.log('[Migration] Finished migrating images.');
+  } catch (err) {
+    console.error('[Migration] Failed to migrate legacy images:', err);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
   migrateExistingAudioPeaks();
+  migrateExistingImages();
 });
