@@ -56,11 +56,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
     wavesurferRef.current = WaveSurfer.create(options);
 
     if (audioUrl) {
-      if (peaksData) {
-        wavesurferRef.current.load(audioUrl, [peaksData], durationData);
-      } else {
-        wavesurferRef.current.load(audioUrl);
-      }
+      wavesurferRef.current.load(audioUrl);
     }
 
     if (durationData) {
