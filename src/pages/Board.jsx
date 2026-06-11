@@ -1050,7 +1050,7 @@ export default function Board() {
             flexShrink: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.18)'
           }}>
-            <span style={{ fontSize: '14px', fontFamily: 'monospace', opacity: 0.8 }}>
+            <span style={{ fontSize: '12px', fontFamily: 'monospace', opacity: 0.8 }}>
               {m.date || getFormattedDate()}
             </span>
             <button 
@@ -1428,7 +1428,7 @@ export default function Board() {
           width: 100%;
           max-width: 120px;
           text-align: center;
-          font-size: 17px;
+          font-size: 20px;
           font-weight: bold;
           line-height: 1.25;
           word-break: keep-all;
@@ -1640,7 +1640,7 @@ export default function Board() {
                       {m.author} {isLocked && `(수정 중: ${lockedMemos[m.id]})`}
                     </span>
                   )}
-                  <span style={{ fontSize: '14px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: 'auto', marginRight: '8px', opacity: 0.8 }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: 'auto', marginRight: '8px', opacity: 0.8 }}>
                     {m.date || getFormattedDate()}
                   </span>
                 </div>
