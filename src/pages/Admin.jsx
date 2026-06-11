@@ -941,12 +941,12 @@ export default function Admin() {
                   </div>
 
                   {/* URL */}
-                  <span className="pad-url" style={{ color: adminTextColor }}>
+                  <span className="pad-url" style={{ color: adminTextColor, paddingLeft: '8px' }}>
                     {window.location.origin}/{pad.id}
                   </span>
 
                   {/* Stats */}
-                  <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace' }}>
+                  <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', paddingLeft: '8px' }}>
                     <span>note {pad.memoCount || 0}</span>
                     <span>·</span>
                     <span>sound {pad.soundCount || 0}</span>
@@ -1124,7 +1124,7 @@ export default function Admin() {
                 </div>
 
                 {/* 4. URL */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: '8px' }}>
                   <span className="pad-url" style={{ color: adminTextColor, wordBreak: 'break-all' }}>
                     {window.location.origin}/{pad.id}
                   </span>

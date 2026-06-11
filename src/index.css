@@ -249,7 +249,8 @@ body {
 
 .pad-date {
   font-size: 1.1rem;
-  width: 150px;
+  width: 220px;
+  white-space: nowrap;
   display: inline-block;
 }
 

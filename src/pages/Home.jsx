@@ -161,12 +161,12 @@ export default function Home() {
                     </button>
                     
                     {/* URL */}
-                    <span className="pad-url" style={{ color: normalTextColor }}>
+                    <span className="pad-url" style={{ color: normalTextColor, paddingLeft: '8px' }}>
                       {window.location.origin}/{pad.id}
                     </span>
                     
                     {/* Stats */}
-                    <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace' }}>
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace', paddingLeft: '8px' }}>
                       <span>note {pad.memoCount || 0}</span>
                       <span>·</span>
                       <span>sound {pad.soundCount || 0}</span>
@@ -232,7 +232,7 @@ export default function Home() {
                   </div>
 
                   {/* 3. URL */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: '8px' }}>
                     <span className="pad-url" style={{ color: normalTextColor, wordBreak: 'break-all' }}>
                       {window.location.origin}/{pad.id}
                     </span>
