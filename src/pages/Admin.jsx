@@ -453,6 +453,10 @@ export default function Admin() {
   return (
     <div className="app-container" style={{ background: draftSettings.adminBgColor }}>
       <div className="app-content">
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '25px', borderBottom: `1px solid ${adminTextColor}`, paddingBottom: '10px' }}>
+          <h1 style={{ fontSize: '1.8rem', margin: 0, color: adminTextColor }}>Sorinote Admin</h1>
+          <span style={{ fontSize: '13px', color: adminTextColor, opacity: 0.7, fontFamily: 'monospace' }}>v1.2.0</span>
+        </div>
 
         <div className="admin-header-row">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
