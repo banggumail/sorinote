@@ -443,8 +443,29 @@ app.delete('/api/pads/:padId', async (req, res) => {
   try {
     const db = await getDb();
     const { padId } = req.params;
+    
+    // Get all memos under the pad before deleting records
+    const memos = await db.all('SELECT audioUrl, imageUrl FROM memos WHERE padId = ?', padId);
+
     await db.run('DELETE FROM pads WHERE id = ?', padId);
     await db.run('DELETE FROM memos WHERE padId = ?', padId);
+
+    // Delete physical files
+    for (const memo of memos) {
+      if (memo.audioUrl && memo.audioUrl.startsWith('/uploads/')) {
+        const audioFilePath = path.join(__dirname, memo.audioUrl.replace(/^\//, ''));
+        if (fs.existsSync(audioFilePath)) {
+          fs.promises.unlink(audioFilePath).catch(err => console.error('Failed to delete physical audio file on pad delete:', err));
+        }
+      }
+      if (memo.imageUrl && memo.imageUrl.startsWith('/uploads/')) {
+        const imageFilePath = path.join(__dirname, memo.imageUrl.replace(/^\//, ''));
+        if (fs.existsSync(imageFilePath)) {
+          fs.promises.unlink(imageFilePath).catch(err => console.error('Failed to delete physical image file on pad delete:', err));
+        }
+      }
+    }
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -633,7 +654,27 @@ io.on('connection', (socket) => {
   socket.on('memo:delete', async ({ padId, id }) => {
     try {
       const db = await getDb();
+      
+      // Get the memo's audio and image paths before deleting it from DB
+      const memo = await db.get('SELECT audioUrl, imageUrl FROM memos WHERE id = ? AND padId = ?', id, padId);
+
       await db.run('DELETE FROM memos WHERE id = ? AND padId = ?', id, padId);
+
+      // Delete physical files
+      if (memo) {
+        if (memo.audioUrl && memo.audioUrl.startsWith('/uploads/')) {
+          const audioFilePath = path.join(__dirname, memo.audioUrl.replace(/^\//, ''));
+          if (fs.existsSync(audioFilePath)) {
+            fs.promises.unlink(audioFilePath).catch(err => console.error('Failed to delete physical audio file on memo delete:', err));
+          }
+        }
+        if (memo.imageUrl && memo.imageUrl.startsWith('/uploads/')) {
+          const imageFilePath = path.join(__dirname, memo.imageUrl.replace(/^\//, ''));
+          if (fs.existsSync(imageFilePath)) {
+            fs.promises.unlink(imageFilePath).catch(err => console.error('Failed to delete physical image file on memo delete:', err));
+          }
+        }
+      }
       
       if (activeLocks[padId] && activeLocks[padId][id]) {
         delete activeLocks[padId][id];
