@@ -36,7 +36,6 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const peaksData = peaks?.peaks;
     const durationData = peaks?.duration;
 
     const options = {
@@ -47,11 +46,6 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
       cursorWidth: 1,
       height: 40,
     };
-
-    if (peaksData) {
-      options.peaks = [peaksData];
-      options.duration = durationData;
-    }
 
     wavesurferRef.current = WaveSurfer.create(options);
 
