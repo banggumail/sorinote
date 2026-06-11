@@ -74,9 +74,16 @@ async function initializeDatabase(database) {
       audioUrl TEXT,
       audioFileName TEXT,
       imageUrl TEXT,
-      imageFileName TEXT
+      imageFileName TEXT,
+      waveformPeaks TEXT
     )
   `);
+
+  try {
+    await database.exec(`ALTER TABLE memos ADD COLUMN waveformPeaks TEXT`);
+  } catch (err) {
+    // Column might already exist
+  }
 
   // Insert default settings if not exists
   const homeSettings = await database.get('SELECT value FROM settings WHERE key = ?', 'homeSettings');

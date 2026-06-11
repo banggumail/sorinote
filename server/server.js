@@ -8,7 +8,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { getDb } from './db.js';
 import dotenv from 'dotenv';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 
 // Load environment variables
@@ -69,6 +69,89 @@ async function checkAndTranscodeAudio(file) {
   }
   
   return null;
+}
+
+// Extract peaks (0-1 float array) and duration using ffmpeg & ffprobe
+async function extractPeaksAndDuration(filePath) {
+  try {
+    // 1. Get audio duration with ffprobe
+    const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
+    const { stdout } = await execPromise(ffprobeCmd);
+    const duration = parseFloat(stdout.trim());
+    
+    // 2. Extract PCM stream using ffmpeg to calculate peak data
+    const peaks = await new Promise((resolve) => {
+      const ffmpeg = spawn('ffmpeg', [
+        '-v', 'error',
+        '-i', filePath,
+        '-f', 's16le',
+        '-ac', '1',
+        '-ar', '8000',
+        '-'
+      ]);
+
+      const chunks = [];
+      ffmpeg.stdout.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+
+      ffmpeg.on('close', (code) => {
+        if (code !== 0) {
+          resolve(null);
+          return;
+        }
+
+        const buffer = Buffer.concat(chunks);
+        const sampleCount = Math.floor(buffer.length / 2);
+        
+        if (sampleCount === 0) {
+          resolve([]);
+          return;
+        }
+
+        const samples = new Float32Array(sampleCount);
+        let maxVal = 0;
+        for (let i = 0; i < sampleCount; i++) {
+          const val = buffer.readInt16LE(i * 2) / 32768.0;
+          samples[i] = val;
+          const absVal = Math.abs(val);
+          if (absVal > maxVal) {
+            maxVal = absVal;
+          }
+        }
+
+        const targetPoints = 200;
+        const step = Math.max(1, Math.floor(sampleCount / targetPoints));
+        const peakData = [];
+
+        for (let i = 0; i < sampleCount; i += step) {
+          let windowMax = 0;
+          const end = Math.min(i + step, sampleCount);
+          for (let j = i; j < end; j++) {
+            const abs = Math.abs(samples[j]);
+            if (abs > windowMax) {
+              windowMax = abs;
+            }
+          }
+          peakData.push(maxVal > 0 ? parseFloat((windowMax / maxVal).toFixed(4)) : 0);
+        }
+        resolve(peakData);
+      });
+
+      ffmpeg.on('error', (err) => {
+        console.error('ffmpeg process error:', err);
+        resolve(null);
+      });
+    });
+
+    return {
+      peaks: peaks || [],
+      duration: isNaN(duration) ? 0 : duration
+    };
+  } catch (err) {
+    console.error('Error in extractPeaksAndDuration:', err);
+    return null;
+  }
 }
 
 
@@ -271,7 +354,23 @@ app.get('/api/pads/:padId', async (req, res) => {
     }
     
     const memos = await db.all('SELECT * FROM memos WHERE padId = ?', padId);
-    res.json({ pad, memos });
+
+    const parsedMemos = memos.map(m => {
+      let waveformPeaks = null;
+      if (m.waveformPeaks) {
+        try {
+          waveformPeaks = JSON.parse(m.waveformPeaks);
+        } catch (e) {
+          console.error('Failed to parse waveformPeaks:', e);
+        }
+      }
+      return {
+        ...m,
+        waveformPeaks
+      };
+    });
+
+    res.json({ pad, memos: parsedMemos });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -331,8 +430,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   let originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
   
   // Transcode audio if necessary (ALAC -> AAC, CAF -> M4A)
+  let isAudio = false;
   try {
-    if (req.file.mimetype.startsWith('audio/') || ['.m4a', '.caf'].includes(path.extname(req.file.originalname).toLowerCase())) {
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    if (req.file.mimetype.startsWith('audio/') || ['.m4a', '.caf', '.mp3', '.wav', '.ogg', '.aac', '.flac'].includes(ext)) {
+      isAudio = true;
       const transcodeResult = await checkAndTranscodeAudio(req.file);
       if (transcodeResult && transcodeResult.originalNameExtension) {
         // Update original filename extension to match transcoded file
@@ -346,7 +448,18 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
   // Return the relative URL of the file
   const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ fileUrl, originalName });
+
+  // Extract audio peaks and duration if it's audio
+  let waveformPeaks = null;
+  if (isAudio) {
+    try {
+      waveformPeaks = await extractPeaksAndDuration(req.file.path);
+    } catch (err) {
+      console.error('Failed to extract audio peaks on upload:', err);
+    }
+  }
+
+  res.json({ fileUrl, originalName, waveformPeaks });
 });
 
 // Serve static built frontend files in production (standalone execution support)
@@ -438,26 +551,30 @@ io.on('connection', (socket) => {
             title = ?, author = ?, content = ?, color = ?, date = ?, 
             x = ?, y = ?, z = ?, parentId = ?, titleColor = ?, 
             contentColor = ?, waveformColor = ?, audioUrl = ?, 
-            audioFileName = ?, imageUrl = ?, imageFileName = ?
+            audioFileName = ?, imageUrl = ?, imageFileName = ?,
+            waveformPeaks = ?
           WHERE id = ? AND padId = ?
         `, 
         memo.title, memo.author, memo.content, memo.color, memo.date,
         memo.x, memo.y, memo.z, memo.parentId || null, memo.titleColor || null,
         memo.contentColor || null, memo.waveformColor || null, memo.audioUrl || null,
         memo.audioFileName || null, memo.imageUrl || null, memo.imageFileName || null,
+        memo.waveformPeaks ? JSON.stringify(memo.waveformPeaks) : null,
         memo.id, padId);
       } else {
         await db.run(`
           INSERT INTO memos (
             id, padId, title, author, content, color, date, 
             x, y, z, parentId, titleColor, contentColor, 
-            waveformColor, audioUrl, audioFileName, imageUrl, imageFileName
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            waveformColor, audioUrl, audioFileName, imageUrl, imageFileName,
+            waveformPeaks
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         memo.id, padId, memo.title, memo.author, memo.content, memo.color, memo.date,
         memo.x, memo.y, memo.z, memo.parentId || null, memo.titleColor || null,
         memo.contentColor || null, memo.waveformColor || null, memo.audioUrl || null,
-        memo.audioFileName || null, memo.imageUrl || null, memo.imageFileName || null);
+        memo.audioFileName || null, memo.imageUrl || null, memo.imageFileName || null,
+        memo.waveformPeaks ? JSON.stringify(memo.waveformPeaks) : null);
       }
 
       // Unlock memo since editing finished
@@ -515,7 +632,49 @@ io.on('connection', (socket) => {
   });
 });
 
+async function migrateExistingAudioPeaks() {
+  try {
+    const db = await getDb();
+    const memosWithAudio = await db.all(`
+      SELECT id, audioUrl, audioFileName, waveformPeaks 
+      FROM memos 
+      WHERE audioUrl LIKE '/uploads/%' 
+        AND (waveformPeaks IS NULL OR waveformPeaks = '' OR waveformPeaks = 'null')
+    `);
+
+    if (memosWithAudio.length === 0) {
+      return;
+    }
+
+    console.log(`[Migration] Found ${memosWithAudio.length} memos with audio and no peak cache. Generating peak data...`);
+
+    for (const memo of memosWithAudio) {
+      const relativePath = memo.audioUrl.replace(/^\//, '');
+      const filePath = path.join(__dirname, relativePath);
+
+      if (fs.existsSync(filePath)) {
+        console.log(`[Migration] Extracting peaks for Memo #${memo.id} (${memo.audioFileName})...`);
+        const result = await extractPeaksAndDuration(filePath);
+        if (result) {
+          await db.run(
+            'UPDATE memos SET waveformPeaks = ? WHERE id = ?',
+            JSON.stringify(result),
+            memo.id
+          );
+          console.log(`[Migration] Updated peaks for Memo #${memo.id}`);
+        }
+      } else {
+        console.warn(`[Migration] Audio file for Memo #${memo.id} does not exist at ${filePath}`);
+      }
+    }
+    console.log('[Migration] Finished generating peak data.');
+  } catch (err) {
+    console.error('[Migration] Failed to migrate audio peaks:', err);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
+  migrateExistingAudioPeaks();
 });

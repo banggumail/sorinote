@@ -18,7 +18,7 @@ const getTranslucentColor = (hex, opacity = 0.3) => {
   return hex;
 };
 
-export default function WaveformPlayer({ audioUrl, fileName, textColor = "#000000", customColor, showFileName = true }) {
+export default function WaveformPlayer({ audioUrl, fileName, textColor = "#000000", customColor, showFileName = true, peaks }) {
   const containerRef = useRef(null);
   const wavesurferRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -36,17 +36,35 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
   useEffect(() => {
     if (!containerRef.current) return;
 
-    wavesurferRef.current = WaveSurfer.create({
+    const peaksData = peaks?.peaks;
+    const durationData = peaks?.duration;
+
+    const options = {
       container: containerRef.current,
       waveColor: resolvedColor,
       progressColor: getTranslucentColor(resolvedColor, 0.4),
       cursorColor: resolvedColor,
       cursorWidth: 1,
       height: 40,
-    });
+    };
+
+    if (peaksData) {
+      options.peaks = peaksData;
+      options.duration = durationData;
+    }
+
+    wavesurferRef.current = WaveSurfer.create(options);
 
     if (audioUrl) {
-      wavesurferRef.current.load(audioUrl);
+      if (peaksData) {
+        wavesurferRef.current.load(audioUrl, peaksData, durationData);
+      } else {
+        wavesurferRef.current.load(audioUrl);
+      }
+    }
+
+    if (durationData) {
+      setDuration(formatTime(durationData));
     }
 
     wavesurferRef.current.on('ready', () => {
@@ -71,7 +89,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
         wavesurferRef.current.destroy();
       }
     };
-  }, [audioUrl, resolvedColor]);
+  }, [audioUrl, resolvedColor, peaks]);
 
   const togglePlay = (e) => {
     e.stopPropagation();

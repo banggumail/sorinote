@@ -161,6 +161,41 @@ export default function Board() {
   const offsetY = Math.max(0, (viewportSize.height - CANVAS_SIZE * zoomLevel) / 2);
   const uiScale = Math.min(1, Math.max(0.71, viewportSize.width / 1920));
 
+  const isMemoVisible = useCallback((memo) => {
+    if (draggingMemo?.id === memo.id || activeMemoId === memo.id || memo.isEditing || memo.isExpanded) {
+      return true;
+    }
+
+    const viewLeft = (scrollPos.left - offsetX) / zoomLevel;
+    const viewTop = (scrollPos.top - offsetY) / zoomLevel;
+    const viewWidth = viewportSize.width / zoomLevel;
+    const viewHeight = viewportSize.height / zoomLevel;
+
+    const viewRight = viewLeft + viewWidth;
+    const viewBottom = viewTop + viewHeight;
+
+    const buffer = 600;
+    const bufferedLeft = viewLeft - buffer;
+    const bufferedTop = viewTop - buffer;
+    const bufferedRight = viewRight + buffer;
+    const bufferedBottom = viewBottom + buffer;
+
+    const memoWidth = 340;
+    const memoHeight = 1000;
+
+    const memoLeft = memo.x;
+    const memoRight = memo.x + memoWidth;
+    const memoTop = memo.y;
+    const memoBottom = memo.y + memoHeight;
+
+    return (
+      memoRight >= bufferedLeft &&
+      memoLeft <= bufferedRight &&
+      memoBottom >= bufferedTop &&
+      memoTop <= bufferedBottom
+    );
+  }, [scrollPos, viewportSize, zoomLevel, offsetX, offsetY, draggingMemo, activeMemoId]);
+
   const scrollRefCallback = useCallback((el) => {
     if (resizeObserverRef.current) {
       resizeObserverRef.current.disconnect();
@@ -468,6 +503,7 @@ export default function Board() {
     
     let audioUrl = null;
     let audioFileName = null;
+    let waveformPeaks = null;
     let imageUrl = null;
     let imageFileName = null;
     
@@ -475,6 +511,7 @@ export default function Board() {
     if (currentMemo) {
       audioUrl = currentMemo.audioUrl;
       audioFileName = currentMemo.audioFileName;
+      waveformPeaks = currentMemo.waveformPeaks;
       imageUrl = currentMemo.imageUrl;
       imageFileName = currentMemo.imageFileName;
     }
@@ -490,6 +527,7 @@ export default function Board() {
         const uploadData = await res.json();
         audioUrl = uploadData.fileUrl;
         audioFileName = uploadData.originalName;
+        waveformPeaks = uploadData.waveformPeaks;
       } catch (err) {
         console.error('Audio upload failed:', err);
       }
@@ -522,6 +560,7 @@ export default function Board() {
       isExpanded: false,
       audioUrl,
       audioFileName,
+      waveformPeaks,
       imageUrl,
       imageFileName
     };
@@ -824,7 +863,7 @@ export default function Board() {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} />
+                                <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} />
                               </div>
                               <input 
                                 className="square-color-picker"
@@ -948,7 +987,7 @@ export default function Board() {
                       
                       {m.audioUrl && (
                         <div style={{ margin: '4px 0' }} onClick={(e) => e.stopPropagation()}>
-                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} />
+                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} />
                         </div>
                       )}
 
@@ -1207,7 +1246,7 @@ export default function Board() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} />
+                      <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} />
                     </div>
                     <input 
                       className="square-color-picker"
@@ -1545,6 +1584,10 @@ export default function Board() {
             <main style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, position: 'relative', transform: `scale(${zoomLevel})`, transformOrigin: 'top left', backgroundColor: canvasBgColor }}>
           <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }}>
             {memos.map(m => {
+              if (!isMemoVisible(m)) return null;
+              const parentMemo = m.parentId ? memos.find(p => p.id === m.parentId) : null;
+              if (parentMemo && !isMemoVisible(parentMemo)) return null;
+              
               const start = m.parentId && getWordPosition(m.parentId, m.sourceInfo.text);
               return start && <line key={m.id} x1={start.x} y1={start.y} x2={m.x} y2={m.y} stroke="#999" strokeWidth="1" />;
             })}
@@ -1589,6 +1632,8 @@ export default function Board() {
           })}
 
           {memos.map(m => {
+            if (!isMemoVisible(m)) return null;
+
             const textColor = getContrastColor(m.color);
             const borderColor = textColor === "#ffffff" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
             const isLocked = lockedMemos[m.id] && lockedMemos[m.id] !== lastUsedUser.name;
@@ -1775,7 +1820,7 @@ export default function Board() {
                         {m.audioUrl && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} />
+                              <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} />
                             </div>
                             <input 
                               className="square-color-picker"
@@ -1893,7 +1938,7 @@ export default function Board() {
 
                       {m.audioUrl && (
                         <div style={{ marginTop: '5px', marginBottom: '5px' }}>
-                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} />
+                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} />
                         </div>
                       )}
                       
