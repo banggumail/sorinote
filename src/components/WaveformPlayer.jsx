@@ -79,6 +79,14 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
       setCurrentTime(formatTime(wavesurferRef.current.getCurrentTime()));
     });
 
+    wavesurferRef.current.on('play', () => {
+      setIsPlaying(true);
+    });
+
+    wavesurferRef.current.on('pause', () => {
+      setIsPlaying(false);
+    });
+
     wavesurferRef.current.on('finish', () => {
       setIsPlaying(false);
       setCurrentTime(formatTime(0));
@@ -94,8 +102,9 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
   const togglePlay = (e) => {
     e.stopPropagation();
     if (wavesurferRef.current) {
-      wavesurferRef.current.playPause();
-      setIsPlaying(wavesurferRef.current.isPlaying());
+      wavesurferRef.current.playPause().catch(err => {
+        console.error('Play/Pause failed:', err);
+      });
     }
   };
 
