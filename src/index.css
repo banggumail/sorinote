@@ -249,7 +249,7 @@ body {
 
 .pad-date {
   font-size: 1.1rem;
-  min-width: 130px;
+  width: 150px;
   display: inline-block;
 }
 
@@ -445,6 +445,7 @@ body {
   .pad-date {
     font-size: 0.8rem;
     min-width: auto;
+    width: auto;
   }
 
   .pad-title-btn {
