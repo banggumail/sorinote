@@ -68,6 +68,29 @@ async function checkAndTranscodeAudio(file) {
       console.error('Error checking/transcoding ALAC to AAC:', err);
     }
   }
+
+  // 3. If it's a wav, flac, aif, or aiff file, transcode it to mp3 (standard compressed)
+  if (['.wav', '.flac', '.aif', '.aiff'].includes(ext)) {
+    console.log(`${ext} audio detected. Transcoding to MP3...`);
+    const newFilename = file.filename.replace(new RegExp(`${ext}$`, 'i'), '.mp3');
+    const newFilePath = path.join(path.dirname(filePath), newFilename);
+    
+    try {
+      const ffmpegCmd = `ffmpeg -y -i "${filePath}" -codec:a libmp3lame -qscale:a 2 "${newFilePath}"`;
+      await execPromise(ffmpegCmd);
+      
+      // Delete original WAV/FLAC file
+      await fs.promises.unlink(filePath);
+      
+      // Update file object properties
+      file.path = newFilePath;
+      file.filename = newFilename;
+      file.mimetype = 'audio/mpeg';
+      return { success: true, originalNameExtension: '.mp3' };
+    } catch (err) {
+      console.error(`Error transcoding ${ext} to .mp3:`, err);
+    }
+  }
   
   return null;
 }
@@ -228,7 +251,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 20 * 1024 * 1024 } // Limit: 20MB
+  limits: { fileSize: 1000 * 1024 * 1024 } // Limit: 1000MB (1GB)
 });
 
 // --- REST API REST API Routes ---
@@ -820,9 +843,26 @@ async function migrateExistingImages() {
   }
 }
 
+async function cleanupBlobUrls() {
+  try {
+    const db = await getDb();
+    const result = await db.run(`
+      UPDATE memos 
+      SET audioUrl = null, audioFileName = null, waveformPeaks = null
+      WHERE audioUrl LIKE 'blob:%'
+    `);
+    if (result.changes > 0) {
+      console.log(`[Migration] Cleaned up ${result.changes} legacy broken blob URLs.`);
+    }
+  } catch (err) {
+    console.error('[Migration] Failed to clean up blob URLs:', err);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
+  cleanupBlobUrls();
   migrateExistingAudioPeaks();
   migrateExistingImages();
 });

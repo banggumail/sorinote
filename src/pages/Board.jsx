@@ -524,12 +524,17 @@ export default function Board() {
           method: 'POST',
           body: formData
         });
+        if (!res.ok) {
+          throw new Error(`서버 응답 오류 (상태 코드: ${res.status})`);
+        }
         const uploadData = await res.json();
         audioUrl = uploadData.fileUrl;
         audioFileName = uploadData.originalName;
         waveformPeaks = uploadData.waveformPeaks;
       } catch (err) {
         console.error('Audio upload failed:', err);
+        alert(`소리 파일 업로드에 실패했습니다: ${err.message || err}`);
+        return;
       }
     }
     
@@ -541,11 +546,16 @@ export default function Board() {
           method: 'POST',
           body: formData
         });
+        if (!res.ok) {
+          throw new Error(`서버 응답 오류 (상태 코드: ${res.status})`);
+        }
         const uploadData = await res.json();
         imageUrl = uploadData.fileUrl;
         imageFileName = uploadData.originalName;
       } catch (err) {
         console.error('Image upload failed:', err);
+        alert(`이미지 파일 업로드에 실패했습니다: ${err.message || err}`);
+        return;
       }
     }
 

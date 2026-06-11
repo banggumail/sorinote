@@ -49,7 +49,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
     };
 
     if (peaksData) {
-      options.peaks = peaksData;
+      options.peaks = [peaksData];
       options.duration = durationData;
     }
 
@@ -57,7 +57,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
 
     if (audioUrl) {
       if (peaksData) {
-        wavesurferRef.current.load(audioUrl, peaksData, durationData);
+        wavesurferRef.current.load(audioUrl, [peaksData], durationData);
       } else {
         wavesurferRef.current.load(audioUrl);
       }
