@@ -1428,7 +1428,7 @@ export default function Board() {
           width: 100%;
           max-width: 120px;
           text-align: center;
-          font-size: 20px;
+          font-size: 17px;
           font-weight: bold;
           line-height: 1.25;
           word-break: keep-all;
@@ -1697,7 +1697,7 @@ export default function Board() {
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input name="t" placeholder="제목" defaultValue={m.title} required style={{ flex: 1, border: 'none', borderBottom: `1px solid ${borderColor}`, color: m.titleColor || textColor, background: 'none', fontSize: `${22}px`, fontWeight: 'normal', flexShrink: 0, minWidth: 0 }} />
+                        <input name="t" placeholder="제목" defaultValue={m.title} required style={{ flex: 1, border: 'none', borderBottom: `1px solid ${borderColor}`, color: m.titleColor || textColor, background: 'none', fontSize: `${18}px`, fontWeight: 'normal', flexShrink: 0, minWidth: 0 }} />
                         <input 
                           className="square-color-picker"
                           type="color" 
@@ -1888,7 +1888,7 @@ export default function Board() {
                   <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
                       <div style={{ paddingBottom: '0px', marginBottom: '0px', flexShrink: 0 }}>
-                        <div style={{ fontSize: `${22}px`, fontWeight: 'normal', color: m.titleColor || textColor, marginBottom: '8px' }}>{m.title}</div>
+                        <div style={{ fontSize: `${18}px`, fontWeight: 'normal', color: m.titleColor || textColor, marginBottom: '8px' }}>{m.title}</div>
                       </div>
 
                       {m.audioUrl && (
