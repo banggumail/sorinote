@@ -18,7 +18,7 @@ const getTranslucentColor = (hex, opacity = 0.3) => {
   return hex;
 };
 
-export default function WaveformPlayer({ audioUrl, fileName, textColor = "#000000", customColor, showFileName = true, peaks, onPlayStateChange }) {
+export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor = "#000000", customColor, showFileName = true, peaks, onPlayStateChange }) {
   const containerRef = useRef(null);
   const wavesurferRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,9 +28,43 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
   const gainNodeRef = useRef(null);
   const onPlayStateChangeRef = useRef(onPlayStateChange);
 
+  const volumeRef = useRef(volume);
+  const currentTimeRef = useRef(currentTime);
+  const durationRef = useRef(duration);
+
   useEffect(() => {
     onPlayStateChangeRef.current = onPlayStateChange;
   }, [onPlayStateChange]);
+
+  useEffect(() => {
+    volumeRef.current = volume;
+  }, [volume]);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  useEffect(() => {
+    durationRef.current = duration;
+  }, [duration]);
+
+  const dispatchUpdate = () => {
+    if (!memoId) return;
+    const event = new CustomEvent(`audio-update-${memoId}`, {
+      detail: { 
+        currentTime: currentTimeRef.current, 
+        duration: durationRef.current, 
+        volume: volumeRef.current 
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
+  const dispatchStop = () => {
+    if (!memoId) return;
+    const event = new CustomEvent(`audio-stop-${memoId}`);
+    window.dispatchEvent(event);
+  };
 
   const resolvedColor = customColor || (textColor === "#ffffff" ? "#ffffff" : "#000000");
 
@@ -105,15 +139,24 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
     }
 
     wavesurferRef.current.on('ready', () => {
-      setDuration(formatTime(wavesurferRef.current.getDuration()));
+      const dur = formatTime(wavesurferRef.current.getDuration());
+      setDuration(dur);
+      durationRef.current = dur;
+      dispatchUpdate();
     });
 
     wavesurferRef.current.on('audioprocess', () => {
-      setCurrentTime(formatTime(wavesurferRef.current.getCurrentTime()));
+      const time = formatTime(wavesurferRef.current.getCurrentTime());
+      setCurrentTime(time);
+      currentTimeRef.current = time;
+      dispatchUpdate();
     });
 
     wavesurferRef.current.on('seek', () => {
-      setCurrentTime(formatTime(wavesurferRef.current.getCurrentTime()));
+      const time = formatTime(wavesurferRef.current.getCurrentTime());
+      setCurrentTime(time);
+      currentTimeRef.current = time;
+      dispatchUpdate();
     });
 
     wavesurferRef.current.on('play', () => {
@@ -121,6 +164,11 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
       if (onPlayStateChangeRef.current) {
         onPlayStateChangeRef.current(true);
       }
+      const time = formatTime(wavesurferRef.current.getCurrentTime());
+      const dur = formatTime(wavesurferRef.current.getDuration() || peaks?.duration || 0);
+      currentTimeRef.current = time;
+      durationRef.current = dur;
+      dispatchUpdate();
     });
 
     wavesurferRef.current.on('pause', () => {
@@ -128,6 +176,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
       if (onPlayStateChangeRef.current) {
         onPlayStateChangeRef.current(false);
       }
+      dispatchStop();
     });
 
     wavesurferRef.current.on('finish', () => {
@@ -136,6 +185,8 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
         onPlayStateChangeRef.current(false);
       }
       setCurrentTime(formatTime(0));
+      currentTimeRef.current = '0:00';
+      dispatchStop();
     });
 
     return () => {
@@ -145,6 +196,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
       if (onPlayStateChangeRef.current) {
         onPlayStateChangeRef.current(false);
       }
+      dispatchStop();
     };
   }, [audioUrl, resolvedColor, peaks]);
 
@@ -165,6 +217,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
     e.stopPropagation();
     const newVol = parseFloat(e.target.value);
     setVolume(newVol);
+    volumeRef.current = newVol;
     initWebAudioVolume();
     if (wavesurferRef.current) {
       wavesurferRef.current.setVolume(newVol);
@@ -178,6 +231,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
         gainNodeRef.current.gain.setValueAtTime(newVol, ctx.currentTime);
       }
     }
+    dispatchUpdate();
   };
 
   return (
@@ -268,11 +322,12 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
           padding: '0 4px',
           color: textColor,
           '--slider-color': textColor,
-          width: '130px'
+          width: '140px',
+          alignSelf: 'flex-start'
         }}
       >
-        <span style={{ fontSize: '9px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>vol</span>
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '6px' }}>0</span>
+        <span style={{ fontSize: '9px', opacity: 0.7, letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>vol</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '16px' }}>*~0</span>
         <input 
           type="range" 
           min="0" max="1" step="0.01" 
@@ -286,7 +341,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
           className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
           title="볼륨 조절"
         />
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '6px' }}>1</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '16px' }}>*~1</span>
       </div>
     </div>
   );

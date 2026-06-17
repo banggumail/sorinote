@@ -52,6 +52,64 @@ const getFormattedDate = () => {
   return `${String(now.getFullYear()).slice(-2)}.${now.getMonth() + 1}.${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 };
 
+const MinimapMemo = ({ memo, scaleRate, w, h }) => {
+  const [playInfo, setPlayInfo] = useState(null);
+
+  useEffect(() => {
+    const handleAudioUpdate = (e) => {
+      setPlayInfo(e.detail);
+    };
+    const handleAudioStop = () => {
+      setPlayInfo(null);
+    };
+
+    window.addEventListener(`audio-update-${memo.id}`, handleAudioUpdate);
+    window.addEventListener(`audio-stop-${memo.id}`, handleAudioStop);
+    return () => {
+      window.removeEventListener(`audio-update-${memo.id}`, handleAudioUpdate);
+      window.removeEventListener(`audio-stop-${memo.id}`, handleAudioStop);
+    };
+  }, [memo.id]);
+
+  const contrastColor = getContrastColor(memo.color);
+
+  return (
+    <div 
+      style={{
+        position: 'absolute',
+        left: memo.x * scaleRate, 
+        top: memo.y * scaleRate,
+        width: Math.max(16, w * scaleRate) + 'px',
+        height: Math.max(12, h * scaleRate) + 'px',
+        backgroundColor: memo.color, 
+        border: '1px solid #000', 
+        boxShadow: '1px 1px 0px rgba(0,0,0,0.5)', 
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        fontSize: '8px',
+        fontWeight: 'bold',
+        color: contrastColor,
+        fontFamily: 'monospace',
+        pointerEvents: 'none',
+        textAlign: 'center',
+        lineHeight: 1.1,
+        padding: '1px'
+      }}
+    >
+      {playInfo && (
+        <div style={{ transform: 'scale(0.55)', transformOrigin: 'center', display: 'flex', flexDirection: 'column', whiteSpace: 'nowrap', width: '100%', alignItems: 'center' }}>
+          <div>{playInfo.currentTime}/{playInfo.duration}</div>
+          <div style={{ opacity: 0.9 }}>*~{playInfo.volume.toFixed(1)}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Board() {
   const getComplementaryColor = (hex) => {
     if (!hex) return '#ffffff';
@@ -886,7 +944,7 @@ export default function Board() {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                                <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                               </div>
                               <input 
                                 className="square-color-picker"
@@ -1010,7 +1068,7 @@ export default function Board() {
                       
                       {m.audioUrl && (
                         <div style={{ margin: '4px 0' }} onClick={(e) => e.stopPropagation()}>
-                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                          <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                         </div>
                       )}
 
@@ -1269,7 +1327,7 @@ export default function Board() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                      <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                     </div>
                     <input 
                       className="square-color-picker"
@@ -1843,7 +1901,7 @@ export default function Board() {
                         {m.audioUrl && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                              <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                             </div>
                             <input 
                               className="square-color-picker"
@@ -1961,7 +2019,7 @@ export default function Board() {
 
                       {m.audioUrl && (
                         <div style={{ marginTop: '5px', marginBottom: '5px' }}>
-                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                          <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                         </div>
                       )}
                       
@@ -2044,13 +2102,7 @@ export default function Board() {
           const w = memoSizes[m.id] ? memoSizes[m.id].w : 340;
           const h = memoSizes[m.id] ? memoSizes[m.id].h : (m.isEditing ? 400 : 200);
           return (
-            <div key={`mini-${m.id}`} style={{
-              position: 'absolute',
-              left: m.x * scaleRate, top: m.y * scaleRate,
-              width: Math.max(16, w * scaleRate) + 'px',
-              height: Math.max(12, h * scaleRate) + 'px',
-              backgroundColor: m.color, border: '1px solid #000', boxShadow: '1px 1px 0px rgba(0,0,0,0.5)', boxSizing: 'border-box'
-            }} />
+            <MinimapMemo key={`mini-${m.id}`} memo={m} scaleRate={scaleRate} w={w} h={h} />
           );
         })}
         <div style={{
