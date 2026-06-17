@@ -2211,10 +2211,10 @@ export default function Board() {
         onPointerDown={(e) => e.stopPropagation()}
         style={{
           position: 'fixed',
-          top: '50%',
+          top: `calc(50vh - ${225 * uiScale}px)`,
           right: '20px',
-          transform: `translateY(-50%) scale(${uiScale})`,
-          transformOrigin: 'right center',
+          transform: `scale(${uiScale})`,
+          transformOrigin: 'right top',
           zIndex: 2000,
           pointerEvents: 'auto'
         }}
