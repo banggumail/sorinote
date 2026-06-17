@@ -2194,55 +2194,49 @@ export default function Board() {
         </div>
       </div>
 
-      <div style={{
-          position: 'fixed', bottom: '20px', right: '20px',
-          transform: `scale(${uiScale})`, transformOrigin: 'bottom right', 
+      {/* Master Out Mixer Panel (MAIN) */}
+      <div 
+        onPointerDown={(e) => e.stopPropagation()}
+        style={{
+          position: 'fixed',
+          top: '50%',
+          right: '20px',
+          transform: `translateY(-50%) scale(${uiScale})`,
+          transformOrigin: 'right center',
           zIndex: 2000,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: '8px'
-      }}>
-        {/* Master Out Mixer Panel */}
+          pointerEvents: 'auto'
+        }}
+      >
         <div style={{
           width: '46px',
-          height: '180px',
+          height: '240px',
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
           border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px solid #d0d0d0' : '1px solid #000000',
-          boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+          boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 0',
+          padding: '12px 0',
           boxSizing: 'border-box',
           userSelect: 'none',
           fontFamily: 'monospace',
           color: '#000000',
           flexShrink: 0
         }}>
-          {/* Header (LED & Title) */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888', transition: 'background-color 0.2s', animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none' }}></div>
-            <span style={{ fontSize: '8px', fontWeight: 'bold', transform: 'scale(0.85)', letterSpacing: '0.2px' }}>MST</span>
-          </div>
+          {/* Header (Title) */}
+          <span style={{ fontSize: '8px', fontWeight: 'bold', transform: 'scale(0.85)', letterSpacing: '0.2px' }}>main</span>
 
-          {/* Volume Slider Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', position: 'relative' }}>
-            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>1</span>
-            <input 
-              type="range"
-              min="0" max="1" step="0.01"
-              value={masterVolume}
-              onChange={(e) => handleMasterVolumeChange(parseFloat(e.target.value))}
-              className="retro-volume-slider vertical-slider"
-              style={{
-                '--slider-color': '#000000'
-              }}
-              title="마스터 볼륨"
-            />
-            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>0</span>
-          </div>
+          {/* LED Indicator Dot */}
+          <div style={{ 
+            width: '6px', 
+            height: '6px', 
+            borderRadius: '50%', 
+            backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888', 
+            boxShadow: playingMemoIds.size > 0 ? '0 0 4px #ff3b30' : 'none',
+            transition: 'background-color 0.2s, box-shadow 0.2s', 
+            animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none' 
+          }}></div>
           
           {/* Buttons Section */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
@@ -2294,21 +2288,47 @@ export default function Board() {
               ■
             </button>
           </div>
-        </div>
 
-        <div 
-          ref={minimapRef}
-          onPointerDown={handleMinimapPointerDown}
-          style={{
-            width: `${MINIMAP_SIZE}px`, height: `${MINIMAP_SIZE}px`, 
-            backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
-            border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px solid #d0d0d0' : 'none', 
-            cursor: isDraggingMinimap ? 'grabbing' : 'crosshair',
-            touchAction: 'none',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
+          {/* Volume Slider Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', position: 'relative' }}>
+            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>1</span>
+            <input 
+              type="range"
+              min="0" max="1" step="0.01"
+              value={masterVolume}
+              onChange={(e) => handleMasterVolumeChange(parseFloat(e.target.value))}
+              className="retro-volume-slider vertical-slider"
+              style={{
+                '--slider-color': '#000000',
+                height: '110px'
+              }}
+              title="마스터 볼륨"
+            />
+            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>0</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Standalone Minimap Wrapper */}
+      <div 
+        ref={minimapRef}
+        onPointerDown={handleMinimapPointerDown}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          transform: `scale(${uiScale})`,
+          transformOrigin: 'bottom right',
+          zIndex: 2000,
+          width: `${MINIMAP_SIZE}px`,
+          height: `${MINIMAP_SIZE}px`, 
+          backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
+          border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px solid #d0d0d0' : 'none', 
+          cursor: isDraggingMinimap ? 'grabbing' : 'crosshair',
+          touchAction: 'none',
+          overflow: 'hidden'
+        }}
+      >
         {memos.map(m => {
           const memoSize = memoSizes[m.id] || getMemoSize(m);
           const w = memoSize.w;
@@ -2324,7 +2344,6 @@ export default function Board() {
           border: '1px solid red', backgroundColor: 'rgba(255, 0, 0, 0.1)',
           pointerEvents: 'none' 
         }} />
-      </div>
       </div>
 
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'bottom center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
