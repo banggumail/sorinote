@@ -275,10 +275,9 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           width: 10px;
           height: 14px;
           background: #cccccc;
-          border: 2px outset #ffffff;
+          border: 3px outset #ffffff;
           border-radius: 0px;
           margin-top: -4px;
-          box-shadow: 1px 1.5px 3px rgba(0,0,0,0.4);
         }
         .retro-volume-slider::-moz-range-track {
           background: transparent;
@@ -289,9 +288,8 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           width: 10px;
           height: 14px;
           background: #cccccc;
-          border: 2px outset #ffffff;
+          border: 3px outset #ffffff;
           border-radius: 0px;
-          box-shadow: 1px 1.5px 3px rgba(0,0,0,0.4);
           box-sizing: border-box;
         }
       `}</style>
@@ -332,12 +330,12 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           padding: '0 4px',
           color: textColor,
           '--slider-color': textColor,
-          width: '140px',
+          width: '120px',
           alignSelf: 'flex-start'
         }}
       >
-        <span style={{ fontSize: '9px', opacity: 0.7, letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>vol</span>
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '24px' }}>*~ 0</span>
+        <span style={{ fontSize: '9px', opacity: 0.8, letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>*~</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>0</span>
         <input 
           type="range" 
           min="0" max="1" step="0.01" 
@@ -351,7 +349,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
           title="볼륨 조절"
         />
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '24px' }}>*~ 1</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>1</span>
       </div>
     </div>
   );
