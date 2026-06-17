@@ -2205,27 +2205,47 @@ export default function Board() {
       }}>
         {/* Master Out Mixer Panel */}
         <div style={{
-          width: `${MINIMAP_SIZE}px`,
-          height: '40px',
+          width: '46px',
+          height: '180px',
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
           border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px solid #d0d0d0' : '1px solid #000000',
           boxShadow: '2px 2px 0px rgba(0,0,0,1)',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 10px',
+          padding: '10px 0',
           boxSizing: 'border-box',
           userSelect: 'none',
           fontFamily: 'monospace',
           color: '#000000',
           flexShrink: 0
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '9px', fontWeight: 'bold', letterSpacing: '0.5px' }}>MASTER OUT</span>
+          {/* Header (LED & Title) */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888', transition: 'background-color 0.2s', animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none' }}></div>
+            <span style={{ fontSize: '8px', fontWeight: 'bold', transform: 'scale(0.85)', letterSpacing: '0.2px' }}>MST</span>
+          </div>
+
+          {/* Volume Slider Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', position: 'relative' }}>
+            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>1</span>
+            <input 
+              type="range"
+              min="0" max="1" step="0.01"
+              value={masterVolume}
+              onChange={(e) => handleMasterVolumeChange(parseFloat(e.target.value))}
+              className="retro-volume-slider vertical-slider"
+              style={{
+                '--slider-color': '#000000'
+              }}
+              title="마스터 볼륨"
+            />
+            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>0</span>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Buttons Section */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
             {/* Play/Pause Button */}
             <button 
               onClick={handleMasterPlayPause}
@@ -2236,12 +2256,12 @@ export default function Board() {
                 borderRadius: '0px',
                 cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
                 opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
-                width: '22px',
-                height: '22px',
+                width: '20px',
+                height: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '10px',
+                fontSize: '9px',
                 fontWeight: 'bold',
                 padding: 0
               }}
@@ -2260,12 +2280,12 @@ export default function Board() {
                 borderRadius: '0px',
                 cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
                 opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
-                width: '22px',
-                height: '22px',
+                width: '20px',
+                height: '20px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '10px',
+                fontSize: '9px',
                 fontWeight: 'bold',
                 padding: 0
               }}
@@ -2273,25 +2293,6 @@ export default function Board() {
             >
               ■
             </button>
-          </div>
-
-          {/* Master Volume Slider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '105px' }}>
-            <span style={{ fontSize: '9px', fontWeight: 'bold' }}>*~</span>
-            <span style={{ fontSize: '9px', fontWeight: 'bold' }}>0</span>
-            <input 
-              type="range"
-              min="0" max="1" step="0.01"
-              value={masterVolume}
-              onChange={(e) => handleMasterVolumeChange(parseFloat(e.target.value))}
-              className="retro-volume-slider"
-              style={{
-                flex: 1,
-                '--slider-color': '#000000'
-              }}
-              title="마스터 볼륨"
-            />
-            <span style={{ fontSize: '9px', fontWeight: 'bold' }}>1</span>
           </div>
         </div>
 

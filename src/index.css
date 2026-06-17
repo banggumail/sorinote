@@ -978,11 +978,6 @@ textarea::placeholder {
   border-radius: 0px;
   margin-top: -4px;
 }
-.retro-volume-slider::-moz-range-track {
-  background: transparent;
-  border: none;
-  height: 6px;
-}
 .retro-volume-slider::-moz-range-thumb {
   width: 6px;
   height: 14px;
@@ -990,4 +985,47 @@ textarea::placeholder {
   border: 1px groove rgba(255, 255, 255, 0.5);
   border-radius: 0px;
   box-sizing: border-box;
+}
+
+/* Vertical slider styles for Mixer Out fader */
+.retro-volume-slider.vertical-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 6px;
+  height: 80px;
+  margin: 0;
+  display: block;
+}
+.retro-volume-slider.vertical-slider::-webkit-slider-runnable-track {
+  width: 6px;
+  height: 100%;
+  background: transparent;
+  border: none;
+}
+.retro-volume-slider.vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 6px;
+  background: var(--slider-color, currentColor);
+  border: 1px groove rgba(255, 255, 255, 0.5);
+  border-radius: 0px;
+  margin-top: 0;
+  margin-left: -4px;
+  cursor: pointer;
+}
+.retro-volume-slider.vertical-slider::-moz-range-track {
+  width: 6px;
+  height: 100%;
+  background: transparent;
+  border: none;
+}
+.retro-volume-slider.vertical-slider::-moz-range-thumb {
+  width: 14px;
+  height: 6px;
+  background: var(--slider-color, currentColor);
+  border: 1px groove rgba(255, 255, 255, 0.5);
+  border-radius: 0px;
+  box-sizing: border-box;
+  cursor: pointer;
 }
