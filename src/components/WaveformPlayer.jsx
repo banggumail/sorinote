@@ -25,6 +25,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
   const [currentTime, setCurrentTime] = useState('0:00');
   const [duration, setDuration] = useState('0:00');
   const [volume, setVolume] = useState(0.5);
+  const [isLooping, setIsLooping] = useState(false);
   const gainNodeRef = useRef(null);
   const onPlayStateChangeRef = useRef(onPlayStateChange);
 
@@ -32,6 +33,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
   const currentTimeRef = useRef(currentTime);
   const durationRef = useRef(duration);
   const isPlayingRef = useRef(false);
+  const isLoopingRef = useRef(isLooping);
 
   useEffect(() => {
     onPlayStateChangeRef.current = onPlayStateChange;
@@ -40,6 +42,10 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
   useEffect(() => {
     volumeRef.current = volume;
   }, [volume]);
+
+  useEffect(() => {
+    isLoopingRef.current = isLooping;
+  }, [isLooping]);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -148,6 +154,10 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
       const dur = formatTime(wavesurferRef.current.getDuration());
       setDuration(dur);
       durationRef.current = dur;
+      const media = wavesurferRef.current.getMediaElement();
+      if (media) {
+        media.loop = isLoopingRef.current;
+      }
       dispatchUpdate();
     });
 
@@ -244,6 +254,18 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     dispatchUpdate();
   };
 
+  const toggleLoop = (e) => {
+    e.stopPropagation();
+    const nextLoop = !isLooping;
+    setIsLooping(nextLoop);
+    if (wavesurferRef.current) {
+      const media = wavesurferRef.current.getMediaElement();
+      if (media) {
+        media.loop = nextLoop;
+      }
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: "transparent", padding: '0px', marginBottom: '0px', pointerEvents: 'auto' }}>
       <style>{`
@@ -320,36 +342,66 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
         <span>{currentTime}</span>
         <span>{duration}</span>
       </div>
-      <div 
-        className="retro-slider-container"
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '5px', 
-          marginTop: '4px', 
-          padding: '0 4px',
-          color: textColor,
-          '--slider-color': resolvedColor,
-          width: '120px',
-          alignSelf: 'flex-start'
-        }}
-      >
-        <span style={{ fontSize: '9px', opacity: 0.8, letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>*~</span>
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>0</span>
-        <input 
-          type="range" 
-          min="0" max="1" step="0.01" 
-          value={volume} 
-          onChange={handleVolumeChange}
-          onClick={(e) => e.stopPropagation()}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', alignSelf: 'flex-start' }}>
+        <div 
+          className="retro-slider-container"
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '5px', 
+            color: textColor,
+            '--slider-color': resolvedColor,
+            width: '120px'
+          }}
+        >
+          <span style={{ fontSize: '9px', opacity: 0.8, letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>*~</span>
+          <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>0</span>
+          <input 
+            type="range" 
+            min="0" max="1" step="0.01" 
+            value={volume} 
+            onChange={handleVolumeChange}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
+            title="볼륨 조절"
+          />
+          <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>1</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={toggleLoop}
           onMouseDown={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
-          className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
-          title="볼륨 조절"
-        />
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>1</span>
+          style={{
+            background: isLooping ? resolvedColor : 'transparent',
+            color: isLooping ? (textColor === '#ffffff' ? '#000000' : '#ffffff') : textColor,
+            border: `1px solid ${resolvedColor}`,
+            borderRadius: '2px',
+            fontSize: '8px',
+            fontWeight: 'bold',
+            padding: '1px 4px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '2px',
+            transition: 'all 0.15s ease',
+            outline: 'none',
+            height: '14px',
+            boxSizing: 'border-box',
+            fontFamily: 'monospace',
+            lineHeight: 1
+          }}
+          title={isLooping ? "반복 재생 켬" : "반복 재생 끔"}
+        >
+          <span>LOOP</span>
+          {isLooping && <span style={{ fontSize: '6px' }}>●</span>}
+        </button>
       </div>
     </div>
   );
