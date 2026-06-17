@@ -31,6 +31,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
   const volumeRef = useRef(volume);
   const currentTimeRef = useRef(currentTime);
   const durationRef = useRef(duration);
+  const isPlayingRef = useRef(false);
 
   useEffect(() => {
     onPlayStateChangeRef.current = onPlayStateChange;
@@ -50,6 +51,10 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
 
   const dispatchUpdate = () => {
     if (!memoId) return;
+    if (!isPlayingRef.current) {
+      dispatchStop();
+      return;
+    }
     const event = new CustomEvent(`audio-update-${memoId}`, {
       detail: { 
         currentTime: currentTimeRef.current, 
@@ -160,6 +165,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     });
 
     wavesurferRef.current.on('play', () => {
+      isPlayingRef.current = true;
       setIsPlaying(true);
       if (onPlayStateChangeRef.current) {
         onPlayStateChangeRef.current(true);
@@ -172,6 +178,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     });
 
     wavesurferRef.current.on('pause', () => {
+      isPlayingRef.current = false;
       setIsPlaying(false);
       if (onPlayStateChangeRef.current) {
         onPlayStateChangeRef.current(false);
@@ -180,6 +187,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     });
 
     wavesurferRef.current.on('finish', () => {
+      isPlayingRef.current = false;
       setIsPlaying(false);
       if (onPlayStateChangeRef.current) {
         onPlayStateChangeRef.current(false);
@@ -190,6 +198,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     });
 
     return () => {
+      isPlayingRef.current = false;
       if (wavesurferRef.current) {
         wavesurferRef.current.destroy();
       }

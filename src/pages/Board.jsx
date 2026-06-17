@@ -72,41 +72,105 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
   }, [memo.id]);
 
   const contrastColor = getContrastColor(memo.color);
+  const isPlaying = !!playInfo;
+
+  const blockW = Math.max(16, w * scaleRate);
+  const blockH = Math.max(12, h * scaleRate);
 
   return (
-    <div 
-      style={{
-        position: 'absolute',
-        left: memo.x * scaleRate, 
-        top: memo.y * scaleRate,
-        width: Math.max(16, w * scaleRate) + 'px',
-        height: Math.max(12, h * scaleRate) + 'px',
-        backgroundColor: memo.color, 
-        border: '1px solid #000', 
-        boxShadow: '1px 1px 0px rgba(0,0,0,0.5)', 
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-        fontSize: '8px',
-        fontWeight: 'bold',
-        color: contrastColor,
-        fontFamily: 'monospace',
-        pointerEvents: 'none',
-        textAlign: 'center',
-        lineHeight: 1.1,
-        padding: '1px'
-      }}
-    >
-      {playInfo && (
-        <div style={{ transform: 'scale(0.55)', transformOrigin: 'center', display: 'flex', flexDirection: 'column', whiteSpace: 'nowrap', width: '100%', alignItems: 'center' }}>
-          <div>{playInfo.currentTime}/{playInfo.duration}</div>
-          <div style={{ opacity: 0.9 }}>*~{playInfo.volume.toFixed(1)}</div>
+    <>
+      {/* 미니맵의 개별 메모 카드 블록 */}
+      <div 
+        style={{
+          position: 'absolute',
+          left: memo.x * scaleRate, 
+          top: memo.y * scaleRate,
+          width: blockW + 'px',
+          height: blockH + 'px',
+          backgroundColor: memo.color, 
+          border: isPlaying ? '2px solid #ff3b30' : '1px solid #000', 
+          boxShadow: isPlaying ? '0 0 10px rgba(255, 59, 48, 0.8), 1px 1px 0px rgba(0,0,0,0.5)' : '1px 1px 0px rgba(0,0,0,0.5)', 
+          boxSizing: 'border-box',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          zIndex: isPlaying ? 1000 : 1,
+          animation: isPlaying ? 'minimap-playing-pulse 1.5s infinite alternate' : 'none',
+        }}
+      >
+        {isPlaying && (
+          <span style={{ fontSize: '9px', color: '#ff3b30', fontWeight: 'bold', animation: 'minimap-icon-pulse 0.8s infinite alternate' }}>▶</span>
+        )}
+      </div>
+
+      {/* 오디오 재생 시 미니맵 위에 뜨는 시인성 높은 말풍선(Tooltip) */}
+      {isPlaying && (
+        <div 
+          style={{
+            position: 'absolute',
+            left: (memo.x * scaleRate + blockW / 2) + 'px',
+            top: (memo.y * scaleRate - 8) + 'px',
+            transform: 'translate(-50%, -100%)',
+            backgroundColor: 'rgba(15, 15, 15, 0.95)',
+            backdropFilter: 'blur(4px)',
+            border: '1.5px solid #ff3b30',
+            borderRadius: '6px',
+            padding: '5px 8px',
+            color: '#ffffff',
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            zIndex: 2000,
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.6), 0 0 8px rgba(255, 59, 48, 0.4)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '3px',
+          }}
+        >
+          {/* 상단: PLAYING 배지 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#ff3b30', letterSpacing: '0.5px' }}>
+            <span 
+              style={{ 
+                width: '6px', 
+                height: '6px', 
+                backgroundColor: '#ff3b30', 
+                borderRadius: '50%', 
+                display: 'inline-block',
+                animation: 'minimap-dot-pulse 0.8s infinite alternate'
+              }} 
+            />
+            <span>PLAYING</span>
+          </div>
+          {/* 중단: 재생 시간 정보 (크고 가독성 좋게) */}
+          <div style={{ fontSize: '11px', letterSpacing: '0.2px', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+            {playInfo.currentTime} / {playInfo.duration}
+          </div>
+          {/* 하단: 볼륨 배율 */}
+          <div style={{ fontSize: '10px', color: '#ffcc00', opacity: 0.9 }}>
+            vol: *~{playInfo.volume.toFixed(2)}
+          </div>
+          {/* 말풍선 아래꼬리 화살표 */}
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: '-6px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '5px solid transparent',
+              borderRight: '5px solid transparent',
+              borderTop: '6px solid #ff3b30',
+            }}
+          />
         </div>
       )}
-    </div>
+    </>
   );
 };
 
