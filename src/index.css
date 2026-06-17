@@ -76,7 +76,7 @@ body {
   appearance: none;
   width: 6px;
   height: 14px;
-  background: #000000;
+  background: #cccccc;
   border: 1px groove rgba(255, 255, 255, 0.5);
   border-radius: 0px;
   margin-top: -4px;
@@ -93,7 +93,7 @@ body {
 .custom-zoom-slider::-moz-range-thumb {
   width: 6px;
   height: 14px;
-  background: #000000;
+  background: #cccccc;
   border: 1px groove rgba(255, 255, 255, 0.5);
   border-radius: 0px;
   box-sizing: border-box;

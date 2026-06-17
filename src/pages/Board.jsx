@@ -2122,20 +2122,23 @@ export default function Board() {
           
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '4px', padding: '0 5px', boxSizing: 'border-box' }}>
-                <div style={{ width: '2px', height: '10px', backgroundColor: '#000' }}></div>
-                <div style={{ width: '2px', height: '10px', backgroundColor: '#000' }}></div>
-                <div style={{ width: '2px', height: '10px', backgroundColor: '#000' }}></div>
-                <div style={{ width: '2px', height: '10px', backgroundColor: '#000' }}></div>
+              <div style={{ position: 'relative', width: '100%', height: '14px', display: 'flex', alignItems: 'center' }}>
+                <input 
+                  type="range" 
+                  className="custom-zoom-slider"
+                  min="0" max="3" step="1" 
+                  value={currentStage}
+                  onChange={(e) => handleZoomChange(zoomStages[e.target.value])}
+                  style={{ width: '100%', position: 'relative', zIndex: 1 }}
+                />
+                {/* 슬라이더 트랙 위에 겹쳐서 표시되는 4단계 눈금선들 */}
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', height: '6px', pointerEvents: 'none', display: 'flex', justifyContent: 'space-between', padding: '0 3px', boxSizing: 'border-box', zIndex: 2 }}>
+                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                </div>
               </div>
-              <input 
-                type="range" 
-                className="custom-zoom-slider"
-                min="0" max="3" step="1" 
-                value={currentStage}
-                onChange={(e) => handleZoomChange(zoomStages[e.target.value])}
-                style={{ width: '100%' }}
-              />
             </div>
           );
         })()}
