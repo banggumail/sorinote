@@ -272,7 +272,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
         .retro-volume-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 10px;
+          width: 6px;
           height: 14px;
           background: var(--slider-color, currentColor);
           border: 1px groove rgba(255, 255, 255, 0.5);
@@ -285,7 +285,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           height: 6px;
         }
         .retro-volume-slider::-moz-range-thumb {
-          width: 10px;
+          width: 6px;
           height: 14px;
           background: var(--slider-color, currentColor);
           border: 1px groove rgba(255, 255, 255, 0.5);
