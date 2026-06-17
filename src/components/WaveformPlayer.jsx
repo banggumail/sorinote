@@ -110,6 +110,55 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: "transparent", padding: '0px', marginBottom: '0px', pointerEvents: 'auto' }}>
+      <style>{`
+        .retro-volume-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          flex: 1;
+          height: 6px;
+          background: repeating-linear-gradient(45deg, rgba(0,0,0,0.08), rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px);
+          border: 1px solid var(--slider-color, currentColor);
+          border-radius: 1px;
+          outline: none;
+          cursor: pointer;
+          margin: 0;
+          padding: 0;
+          display: block;
+        }
+        .retro-volume-slider.dark-theme-slider {
+          background: repeating-linear-gradient(45deg, rgba(255,255,255,0.08), rgba(255,255,255,0.08) 2px, rgba(255,255,255,0.18) 2px, rgba(255,255,255,0.18) 4px);
+        }
+        .retro-volume-slider::-webkit-slider-runnable-track {
+          background: transparent;
+          border: none;
+          height: 6px;
+        }
+        .retro-volume-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 12px;
+          height: 16px;
+          background: linear-gradient(90deg, #ffffff 0%, #dddddd 30%, #444444 45%, #444444 55%, #dddddd 70%, #ffffff 100%);
+          border: 1px solid var(--slider-color, currentColor);
+          border-radius: 1px;
+          margin-top: -5px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .retro-volume-slider::-moz-range-track {
+          background: transparent;
+          border: none;
+          height: 6px;
+        }
+        .retro-volume-slider::-moz-range-thumb {
+          width: 12px;
+          height: 16px;
+          background: linear-gradient(90deg, #ffffff 0%, #dddddd 30%, #444444 45%, #444444 55%, #dddddd 70%, #ffffff 100%);
+          border: 1px solid var(--slider-color, currentColor);
+          border-radius: 1px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+          box-sizing: border-box;
+        }
+      `}</style>
       {showFileName && fileName && (
         <div style={{ fontSize: `${10}px`, color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {fileName}
@@ -137,7 +186,19 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
         <span>{currentTime}</span>
         <span>{duration}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', marginTop: '2px', padding: '0 4px' }}>
+      <div 
+        className="retro-slider-container"
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '6px', 
+          marginTop: '4px', 
+          padding: '0 4px',
+          color: textColor,
+          '--slider-color': textColor
+        }}
+      >
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px' }}>0</span>
         <input 
           type="range" 
           min="0" max="1" step="0.01" 
@@ -148,15 +209,10 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
           onMouseUp={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
           onTouchEnd={(e) => e.stopPropagation()}
-          style={{ 
-            width: '100%', 
-            height: '2px', 
-            accentColor: textColor, 
-            cursor: 'pointer',
-            opacity: 0.7
-          }}
+          className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
           title="볼륨 조절"
         />
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '12px' }}>10</span>
       </div>
     </div>
   );
