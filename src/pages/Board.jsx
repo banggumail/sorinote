@@ -1693,7 +1693,7 @@ export default function Board() {
 
       {/* 중앙 상단: 작성자 설정 및 리소스 카운트 통합 패널 */}
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'top center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'white', padding: '10px 12px 8px 12px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', width: '250px', boxSizing: 'border-box', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#e8e8e8' : '#f0f0f0', padding: '10px 12px 8px 12px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', width: '250px', boxSizing: 'border-box', gap: '8px' }}>
           {/* Row 1: 인풋 필드 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
             <input 
@@ -2207,7 +2207,7 @@ export default function Board() {
         <div style={{
           width: '54px',
           height: '300px',
-          backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
+          backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#e8e8e8' : '#f0f0f0', 
           border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff',
           boxShadow: 'none',
           display: 'flex',
@@ -2344,7 +2344,7 @@ export default function Board() {
       </div>
 
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'bottom center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', padding: '4px 10px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', width: '250px', height: '40px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#e8e8e8' : '#f0f0f0', padding: '4px 10px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', width: '250px', height: '40px', boxSizing: 'border-box' }}>
         {(() => {
           const zoomStages = [minZoom, minZoom + (1.0 - minZoom) * 0.5, 1.0, 1.5];
           let currentStage = 0;
