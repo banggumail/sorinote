@@ -2249,8 +2249,7 @@ export default function Board() {
             height: '8px', 
             borderRadius: '50%', 
             backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888', 
-            boxShadow: playingMemoIds.size > 0 ? '0 0 5px #ff3b30' : 'none',
-            transition: 'background-color 0.2s, box-shadow 0.2s', 
+            transition: 'background-color 0.2s', 
             animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none' 
           }}></div>
           
@@ -2275,7 +2274,6 @@ export default function Board() {
                 fontWeight: 'bold',
                 padding: 0
               }}
-              title={playingMemoIds.size > 0 ? "모두 일시정지" : "모두 재생"}
             >
               {playingMemoIds.size > 0 ? '⏸' : '▶'}
             </button>
@@ -2299,7 +2297,6 @@ export default function Board() {
                 fontWeight: 'bold',
                 padding: 0
               }}
-              title="모두 정지"
             >
               ■
             </button>
