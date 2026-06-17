@@ -86,8 +86,8 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
         width: blockW + 'px',
         height: blockH + 'px',
         backgroundColor: memo.color, 
-        border: isPlaying ? '2px solid #ff3b30' : '1px solid #000', 
-        boxShadow: isPlaying ? '0 0 10px rgba(255, 59, 48, 0.8), 1px 1px 0px rgba(0,0,0,0.5)' : '1px 1px 0px rgba(0,0,0,0.5)', 
+        border: isPlaying ? '1.5px solid #ff3b30' : '1px solid #000', 
+        boxShadow: '1px 1px 0px rgba(0,0,0,0.5)', 
         boxSizing: 'border-box',
         display: 'flex',
         justifyContent: 'center',
@@ -95,11 +95,10 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
         overflow: 'hidden',
         pointerEvents: 'none',
         zIndex: isPlaying ? 1000 : 1,
-        animation: isPlaying ? 'minimap-playing-pulse 1.5s infinite alternate' : 'none',
       }}
     >
       {isPlaying && (
-        <span style={{ fontSize: '9px', color: '#ff3b30', fontWeight: 'bold', animation: 'minimap-icon-pulse 0.8s infinite alternate' }}>▶</span>
+        <span style={{ fontSize: '9px', color: '#ff3b30', fontWeight: 'bold', animation: 'minimap-blink 0.8s infinite' }}>P</span>
       )}
     </div>
   );
