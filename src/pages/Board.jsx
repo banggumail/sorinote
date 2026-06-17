@@ -69,6 +69,45 @@ const getFormattedDate = () => {
   return `${String(now.getFullYear()).slice(-2)}.${now.getMonth() + 1}.${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 };
 
+const getMemoSize = (memo) => {
+  const w = 340;
+  if (!memo) return { w, h: 160 };
+  if (memo.isEditing) {
+    let h = 420;
+    if (memo.imageUrl) h += 120;
+    if (memo.audioUrl) h += 40;
+    return { w, h };
+  }
+  if (memo.isExpanded) {
+    let h = 100; // base (header + title padding)
+    if (memo.audioUrl) h += 65;
+    if (memo.imageUrl) h += 180;
+    if (memo.content) {
+      const lines = memo.content.split('\n');
+      let textHeight = 0;
+      lines.forEach(line => {
+        textHeight += Math.max(1, Math.ceil(line.length / 35)) * 20;
+      });
+      h += textHeight + 20;
+    }
+    h += 40; // footer buttons
+    return { w, h: Math.min(1000, Math.max(300, h)) };
+  }
+  let h = 60; // header + title padding
+  if (memo.title) {
+    h += Math.max(1, Math.ceil(memo.title.length / 30)) * 24;
+  } else {
+    h += 24;
+  }
+  if (memo.audioUrl) {
+    h += 60;
+  }
+  if (memo.imageUrl) {
+    h += 160;
+  }
+  return { w, h: Math.max(80, h) };
+};
+
 const MinimapMemo = ({ memo, scaleRate, w, h }) => {
   const [playInfo, setPlayInfo] = useState(null);
 
@@ -166,7 +205,6 @@ export default function Board() {
   const [padTitleColor, setPadTitleColor] = useState('');
   const [lastUsedUser, setLastUsedUser] = useState({ name: 'name', color: '#ffffff' });
   const [memos, setMemos] = useState([]);
-  const [memoSizes, setMemoSizes] = useState({});
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -196,31 +234,7 @@ export default function Board() {
     }
   };
 
-  useEffect(() => {
-    const observer = new ResizeObserver(entries => {
-      setMemoSizes(prev => {
-        const next = { ...prev };
-        let changed = false;
-        for (let entry of entries) {
-          const id = entry.target.id.replace('memo-', '');
-          const w = entry.target.offsetWidth;
-          const h = entry.target.offsetHeight;
-          if (!prev[id] || prev[id].w !== w || prev[id].h !== h) {
-            next[id] = { w, h };
-            changed = true;
-          }
-        }
-        return changed ? next : prev;
-      });
-    });
-    
-    memos.forEach(m => {
-      const el = document.getElementById(`memo-${m.id}`);
-      if (el) observer.observe(el);
-    });
 
-    return () => observer.disconnect();
-  }, [memos]);
       
   const [draggingMemo, setDraggingMemo] = useState(null);
   const [isDraggingMinimap, setIsDraggingMinimap] = useState(false); 
@@ -460,8 +474,7 @@ export default function Board() {
     const activeMemo = activeMemoId ? memos.find(m => m.id === activeMemoId) : null;
     
     if (activeMemo) {
-      const w = memoSizes[activeMemoId] ? memoSizes[activeMemoId].w : 340;
-      const h = memoSizes[activeMemoId] ? memoSizes[activeMemoId].h : (activeMemo.isEditing ? 400 : (activeMemo.isExpanded ? 300 : 200));
+      const { w, h } = getMemoSize(activeMemo);
       cx = activeMemo.x + w / 2;
       cy = activeMemo.y + h / 2;
     } else {
@@ -2127,8 +2140,7 @@ export default function Board() {
           }}
         >
         {memos.map(m => {
-          const w = memoSizes[m.id] ? memoSizes[m.id].w : 340;
-          const h = memoSizes[m.id] ? memoSizes[m.id].h : (m.isEditing ? 400 : 200);
+          const { w, h } = getMemoSize(m);
           return (
             <MinimapMemo key={`mini-${m.id}`} memo={m} scaleRate={scaleRate} w={w} h={h} />
           );
