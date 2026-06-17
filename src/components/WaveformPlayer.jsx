@@ -24,7 +24,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState('0:00');
   const [duration, setDuration] = useState('0:00');
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume] = useState(0.5);
   const gainNodeRef = useRef(null);
   const onPlayStateChangeRef = useRef(onPlayStateChange);
 
@@ -134,6 +134,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     };
 
     wavesurferRef.current = WaveSurfer.create(options);
+    wavesurferRef.current.setVolume(volume);
 
     if (audioUrl) {
       wavesurferRef.current.load(audioUrl);
@@ -336,7 +337,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
         }}
       >
         <span style={{ fontSize: '9px', opacity: 0.7, letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>vol</span>
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '16px' }}>*~0</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '24px' }}>*~ 0</span>
         <input 
           type="range" 
           min="0" max="1" step="0.01" 
@@ -350,7 +351,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
           title="볼륨 조절"
         />
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '16px' }}>*~1</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '24px' }}>*~ 1</span>
       </div>
     </div>
   );
