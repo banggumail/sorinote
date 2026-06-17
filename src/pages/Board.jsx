@@ -235,44 +235,6 @@ export default function Board() {
     }
   };
 
-  useEffect(() => {
-    const observer = new ResizeObserver(entries => {
-      setMemoSizes(prev => {
-        const next = { ...prev };
-        let changed = false;
-        for (let entry of entries) {
-          const id = entry.target.id.replace('memo-', '');
-          const memo = memos.find(m => String(m.id) === id);
-          if (!memo) continue;
-
-          const w = entry.target.offsetWidth;
-          const h = entry.target.offsetHeight;
-
-          // Unscaled height layout key based on state change
-          const currentLayoutKey = `${memo.id}-${memo.isExpanded}-${memo.isEditing}-${!!memo.audioUrl}-${!!memo.imageUrl}-${memo.title}-${memo.content}`;
-
-          const prevData = prev[id];
-          // Update only if no previous size, layoutKey changed, or height changed significantly (e.g. >15px for lazy images)
-          if (
-            !prevData || 
-            prevData.layoutKey !== currentLayoutKey || 
-            Math.abs(prevData.h - h) > 15
-          ) {
-            next[id] = { w, h, layoutKey: currentLayoutKey };
-            changed = true;
-          }
-        }
-        return changed ? next : prev;
-      });
-    });
-    
-    memos.forEach(m => {
-      const el = document.getElementById(`memo-${m.id}`);
-      if (el) observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, [memos, draggingMemo, activeMemoId, playingMemoIds, scrollPos, viewportSize, zoomLevel, offsetX, offsetY]);
       
   const [draggingMemo, setDraggingMemo] = useState(null);
   const [isDraggingMinimap, setIsDraggingMinimap] = useState(false); 
@@ -346,6 +308,45 @@ export default function Board() {
       memoTop <= bufferedBottom
     );
   }, [scrollPos, viewportSize, zoomLevel, offsetX, offsetY, draggingMemo, activeMemoId, playingMemoIds]);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(entries => {
+      setMemoSizes(prev => {
+        const next = { ...prev };
+        let changed = false;
+        for (let entry of entries) {
+          const id = entry.target.id.replace('memo-', '');
+          const memo = memos.find(m => String(m.id) === id);
+          if (!memo) continue;
+
+          const w = entry.target.offsetWidth;
+          const h = entry.target.offsetHeight;
+
+          // Unscaled height layout key based on state change
+          const currentLayoutKey = `${memo.id}-${memo.isExpanded}-${memo.isEditing}-${!!memo.audioUrl}-${!!memo.imageUrl}-${memo.title}-${memo.content}`;
+
+          const prevData = prev[id];
+          // Update only if no previous size, layoutKey changed, or height changed significantly (e.g. >15px for lazy images)
+          if (
+            !prevData || 
+            prevData.layoutKey !== currentLayoutKey || 
+            Math.abs(prevData.h - h) > 15
+          ) {
+            next[id] = { w, h, layoutKey: currentLayoutKey };
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    });
+    
+    memos.forEach(m => {
+      const el = document.getElementById(`memo-${m.id}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [memos, draggingMemo, activeMemoId, playingMemoIds, scrollPos, viewportSize, zoomLevel, offsetX, offsetY]);
 
   const scrollRefCallback = useCallback((el) => {
     if (resizeObserverRef.current) {
