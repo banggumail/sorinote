@@ -1706,7 +1706,8 @@ export default function Board() {
           borderLeftColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#f0f0f0' : '#f8f8f8',
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#e8e8e8' : '#f0f0f0',
           borderRightColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#c8c8c8' : '#d0d0d0',
-          borderBottomColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#a8a8a8' : '#b0b0b0'
+          borderBottomColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#a8a8a8' : '#b0b0b0',
+          boxShadow: '2px 2px 5px rgba(0,0,0,0.15)'
         }}>
           {/* Row 1: 인풋 필드 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
@@ -2227,7 +2228,7 @@ export default function Board() {
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#e8e8e8' : '#f0f0f0',
           borderRightColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#c8c8c8' : '#d0d0d0',
           borderBottomColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#a8a8a8' : '#b0b0b0',
-          boxShadow: 'none',
+          boxShadow: '2px 2px 5px rgba(0,0,0,0.15)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -2341,7 +2342,8 @@ export default function Board() {
           border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', 
           cursor: isDraggingMinimap ? 'grabbing' : 'crosshair',
           touchAction: 'none',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: '2px 2px 5px rgba(0,0,0,0.15)'
         }}
       >
         {memos.map(m => {
@@ -2375,7 +2377,8 @@ export default function Board() {
           borderLeftColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#f0f0f0' : '#f8f8f8',
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#e8e8e8' : '#f0f0f0',
           borderRightColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#c8c8c8' : '#d0d0d0',
-          borderBottomColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#a8a8a8' : '#b0b0b0'
+          borderBottomColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#a8a8a8' : '#b0b0b0',
+          boxShadow: '2px 2px 5px rgba(0,0,0,0.15)'
         }}>
         {(() => {
           const zoomStages = [minZoom, minZoom + (1.0 - minZoom) * 0.5, 1.0, 1.5];
