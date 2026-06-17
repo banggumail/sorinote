@@ -24,6 +24,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState('0:00');
   const [duration, setDuration] = useState('0:00');
+  const [volume, setVolume] = useState(1);
 
   const resolvedColor = customColor || (textColor === "#ffffff" ? "#ffffff" : "#000000");
 
@@ -98,6 +99,15 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
     }
   };
 
+  const handleVolumeChange = (e) => {
+    e.stopPropagation();
+    const newVol = parseFloat(e.target.value);
+    setVolume(newVol);
+    if (wavesurferRef.current) {
+      wavesurferRef.current.setVolume(newVol);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: "transparent", padding: '0px', marginBottom: '0px', pointerEvents: 'auto' }}>
       {showFileName && fileName && (
@@ -126,6 +136,27 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${9}px`, color: textColor === "#ffffff" ? "rgba(255,255,255,0.7)" : "#666", fontFamily: 'monospace' }}>
         <span>{currentTime}</span>
         <span>{duration}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', marginTop: '2px', padding: '0 4px' }}>
+        <input 
+          type="range" 
+          min="0" max="1" step="0.01" 
+          value={volume} 
+          onChange={handleVolumeChange}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          style={{ 
+            width: '100%', 
+            height: '2px', 
+            accentColor: textColor, 
+            cursor: 'pointer',
+            opacity: 0.7
+          }}
+          title="볼륨 조절"
+        />
       </div>
     </div>
   );
