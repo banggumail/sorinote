@@ -30,6 +30,23 @@ const isReddish = (hexColor) => {
   return r > g + 50 && r > b + 50;
 };
 
+const isPurplish = (hexColor) => {
+  if (!hexColor || typeof hexColor !== 'string' || !hexColor.startsWith('#')) return false;
+  const cleanHex = hexColor.slice(1);
+  if (cleanHex.length !== 6 && cleanHex.length !== 3) return false;
+  let r, g, b;
+  if (cleanHex.length === 3) {
+    r = parseInt(cleanHex[0] + cleanHex[0], 16);
+    g = parseInt(cleanHex[1] + cleanHex[1], 16);
+    b = parseInt(cleanHex[2] + cleanHex[2], 16);
+  } else {
+    r = parseInt(cleanHex.slice(0, 2), 16);
+    g = parseInt(cleanHex.slice(2, 4), 16);
+    b = parseInt(cleanHex.slice(4, 6), 16);
+  }
+  return r > g + 30 && b > g + 30;
+};
+
 const isWhiteOrVeryLight = (hexColor) => {
   if (!hexColor || typeof hexColor !== 'string' || !hexColor.startsWith('#')) return false;
   const cleanHex = hexColor.slice(1);
@@ -75,7 +92,7 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
   const isPlaying = !!playInfo;
 
   let indicatorColor = '#ff3b30';
-  if (isReddish(memo.color)) {
+  if (isReddish(memo.color) || isPurplish(memo.color)) {
     indicatorColor = contrastColor;
   } else if (contrastColor === '#ffffff') {
     indicatorColor = '#ffcc00';
@@ -111,7 +128,10 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
             color: indicatorColor, 
             fontWeight: 'bold', 
             animation: 'minimap-blink 0.8s infinite',
-            fontFamily: 'monospace'
+            fontFamily: 'monospace',
+            textShadow: indicatorColor === '#000000'
+              ? '0 0 2px rgba(255, 255, 255, 0.8)'
+              : '0 0 2px rgba(0, 0, 0, 0.8)'
           }}
         >
           {playInfo ? playInfo.volume.toFixed(1) : '0.5'}
