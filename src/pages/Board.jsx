@@ -2129,10 +2129,10 @@ export default function Board() {
                   min="0" max="3" step="1" 
                   value={currentStage}
                   onChange={(e) => handleZoomChange(zoomStages[e.target.value])}
-                  style={{ width: '100%', position: 'relative', zIndex: 1 }}
+                  style={{ width: '100%', position: 'relative', zIndex: 2 }}
                 />
-                {/* 슬라이더 트랙 위에 겹쳐서 표시되는 4단계 눈금선들 */}
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', height: '6px', pointerEvents: 'none', display: 'flex', justifyContent: 'space-between', padding: '0 3px', boxSizing: 'border-box', zIndex: 2 }}>
+                {/* 슬라이더 트랙 아래에 배치되어 비쳐 보이는 4단계 눈금선들 */}
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', height: '6px', pointerEvents: 'none', display: 'flex', justifyContent: 'space-between', padding: '0 3px', boxSizing: 'border-box', zIndex: 1 }}>
                   <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
                   <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
                   <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
