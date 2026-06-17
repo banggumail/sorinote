@@ -2315,7 +2315,6 @@ export default function Board() {
                 '--slider-color': '#000000',
                 height: '135px'
               }}
-              title="마스터 볼륨"
             />
             <span style={{ fontSize: '9px', fontWeight: 'bold', opacity: 0.8 }}>0</span>
           </div>
