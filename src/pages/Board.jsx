@@ -269,10 +269,7 @@ export default function Board() {
     });
   }, []);
 
-  const [masterVolume, setMasterVolume] = useState(() => {
-    const saved = localStorage.getItem('sorinote_master_volume');
-    return saved !== null ? parseFloat(saved) : 1.0;
-  });
+  const [masterVolume, setMasterVolume] = useState(1.0);
   const [hasPausedAudios, setHasPausedAudios] = useState(false);
 
   const handleMasterVolumeChange = (newVol) => {
@@ -2208,8 +2205,8 @@ export default function Board() {
         }}
       >
         <div style={{
-          width: '46px',
-          height: '240px',
+          width: '54px',
+          height: '300px',
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
           border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px solid #d0d0d0' : '1px solid #000000',
           boxShadow: 'none',
@@ -2217,7 +2214,7 @@ export default function Board() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 0',
+          padding: '16px 0',
           boxSizing: 'border-box',
           userSelect: 'none',
           fontFamily: 'monospace',
@@ -2225,21 +2222,21 @@ export default function Board() {
           flexShrink: 0
         }}>
           {/* Header (Title) */}
-          <span style={{ fontSize: '11px', fontWeight: 'bold', letterSpacing: '0.2px' }}>main</span>
+          <span style={{ fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.2px' }}>main</span>
 
           {/* LED Indicator Dot */}
           <div style={{ 
-            width: '6px', 
-            height: '6px', 
+            width: '8px', 
+            height: '8px', 
             borderRadius: '50%', 
             backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888', 
-            boxShadow: playingMemoIds.size > 0 ? '0 0 4px #ff3b30' : 'none',
+            boxShadow: playingMemoIds.size > 0 ? '0 0 5px #ff3b30' : 'none',
             transition: 'background-color 0.2s, box-shadow 0.2s', 
             animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none' 
           }}></div>
           
           {/* Buttons Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             {/* Play/Pause Button */}
             <button 
               onClick={handleMasterPlayPause}
@@ -2250,12 +2247,12 @@ export default function Board() {
                 borderRadius: '0px',
                 cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
                 opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
-                width: '20px',
-                height: '20px',
+                width: '24px',
+                height: '24px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '9px',
+                fontSize: '11px',
                 fontWeight: 'bold',
                 padding: 0
               }}
@@ -2274,12 +2271,12 @@ export default function Board() {
                 borderRadius: '0px',
                 cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
                 opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
-                width: '20px',
-                height: '20px',
+                width: '24px',
+                height: '24px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '9px',
+                fontSize: '11px',
                 fontWeight: 'bold',
                 padding: 0
               }}
@@ -2291,7 +2288,7 @@ export default function Board() {
 
           {/* Volume Slider Section */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', position: 'relative' }}>
-            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>1</span>
+            <span style={{ fontSize: '9px', fontWeight: 'bold', opacity: 0.8 }}>1</span>
             <input 
               type="range"
               min="0" max="1" step="0.01"
@@ -2300,11 +2297,11 @@ export default function Board() {
               className="retro-volume-slider vertical-slider"
               style={{
                 '--slider-color': '#000000',
-                height: '110px'
+                height: '135px'
               }}
               title="마스터 볼륨"
             />
-            <span style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.8 }}>0</span>
+            <span style={{ fontSize: '9px', fontWeight: 'bold', opacity: 0.8 }}>0</span>
           </div>
         </div>
       </div>

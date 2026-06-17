@@ -38,12 +38,6 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
   const masterVolumeRef = useRef(1.0);
   const wasPlayingBeforeMasterPauseRef = useRef(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('sorinote_master_volume');
-    if (saved !== null) {
-      masterVolumeRef.current = parseFloat(saved);
-    }
-  }, []);
 
   useEffect(() => {
     const handleMasterVolume = (e) => {
