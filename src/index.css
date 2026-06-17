@@ -55,47 +55,49 @@ body {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  background: transparent;
+  height: 6px;
+  background: repeating-linear-gradient(45deg, rgba(0,0,0,0.08), rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px);
+  border: 1px solid #000000;
+  border-radius: 1px;
   outline: none;
   margin: 0;
+  cursor: pointer;
 }
 
 .custom-zoom-slider::-webkit-slider-runnable-track {
   width: 100%;
-  height: 4px; /* 직사각형 트랙 */
-  cursor: pointer;
-  background: #000;
-  border-radius: 0;
+  height: 6px;
+  background: transparent;
+  border: none;
 }
 
 .custom-zoom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 12px;
-  height: 24px;
-  background-color: red;
-  /* 위로 뾰족한 이등변 삼각형 */
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%); 
+  width: 6px;
+  height: 14px;
+  background: #000000;
+  border: 1px groove rgba(255, 255, 255, 0.5);
+  border-radius: 0px;
+  margin-top: -4px;
   cursor: pointer;
-  margin-top: -10px; /* 트랙 중앙 정렬 */
 }
 
 .custom-zoom-slider::-moz-range-track {
   width: 100%;
-  height: 4px;
-  cursor: pointer;
-  background: #000;
-  border-radius: 0;
+  height: 6px;
+  background: transparent;
+  border: none;
 }
 
 .custom-zoom-slider::-moz-range-thumb {
-  width: 12px;
-  height: 24px;
-  background-color: red;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  width: 6px;
+  height: 14px;
+  background: #000000;
+  border: 1px groove rgba(255, 255, 255, 0.5);
+  border-radius: 0px;
+  box-sizing: border-box;
   cursor: pointer;
-  border: none;
-  border-radius: 0;
 }
 
 .write-btn.active {
