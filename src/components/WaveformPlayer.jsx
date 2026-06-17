@@ -35,6 +35,70 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
   const isPlayingRef = useRef(false);
   const isLoopingRef = useRef(isLooping);
 
+  const masterVolumeRef = useRef(1.0);
+  const wasPlayingBeforeMasterPauseRef = useRef(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sorinote_master_volume');
+    if (saved !== null) {
+      masterVolumeRef.current = parseFloat(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleMasterVolume = (e) => {
+      const masterVol = e.detail.volume;
+      masterVolumeRef.current = masterVol;
+      const effectiveVol = volumeRef.current * masterVol;
+      if (wavesurferRef.current) {
+        wavesurferRef.current.setVolume(effectiveVol);
+      }
+      if (gainNodeRef.current) {
+        const ctx = window.sharedAudioContext;
+        if (ctx) {
+          gainNodeRef.current.gain.setValueAtTime(effectiveVol, ctx.currentTime);
+        }
+      }
+    };
+
+    const handleMasterPause = () => {
+      if (isPlayingRef.current && wavesurferRef.current) {
+        wasPlayingBeforeMasterPauseRef.current = true;
+        wavesurferRef.current.pause();
+      }
+    };
+
+    const handleMasterResume = () => {
+      if (wasPlayingBeforeMasterPauseRef.current && wavesurferRef.current) {
+        wasPlayingBeforeMasterPauseRef.current = false;
+        if (window.sharedAudioContext && window.sharedAudioContext.state === 'suspended') {
+          window.sharedAudioContext.resume().catch(err => console.warn(err));
+        }
+        wavesurferRef.current.play().catch(err => console.error(err));
+      }
+    };
+
+    const handleMasterStop = () => {
+      wasPlayingBeforeMasterPauseRef.current = false;
+      if (wavesurferRef.current) {
+        wavesurferRef.current.pause();
+        wavesurferRef.current.setTime(0);
+      }
+    };
+
+    window.addEventListener('master-volume-change', handleMasterVolume);
+    window.addEventListener('master-pause-all', handleMasterPause);
+    window.addEventListener('master-resume-all', handleMasterResume);
+    window.addEventListener('master-stop-all', handleMasterStop);
+
+    return () => {
+      window.removeEventListener('master-volume-change', handleMasterVolume);
+      window.removeEventListener('master-pause-all', handleMasterPause);
+      window.removeEventListener('master-resume-all', handleMasterResume);
+      window.removeEventListener('master-stop-all', handleMasterStop);
+    };
+  }, []);
+
   useEffect(() => {
     onPlayStateChangeRef.current = onPlayStateChange;
   }, [onPlayStateChange]);
@@ -113,7 +177,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
       }
 
       gainNodeRef.current = gainNode;
-      gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+      gainNode.gain.setValueAtTime(volume * masterVolumeRef.current, ctx.currentTime);
     } catch (err) {
       console.warn('Web Audio initialization failed:', err);
     }
@@ -140,7 +204,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     };
 
     wavesurferRef.current = WaveSurfer.create(options);
-    wavesurferRef.current.setVolume(volume);
+    wavesurferRef.current.setVolume(volume * masterVolumeRef.current);
 
     if (audioUrl) {
       wavesurferRef.current.load(audioUrl);
@@ -240,7 +304,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     volumeRef.current = newVol;
     initWebAudioVolume();
     if (wavesurferRef.current) {
-      wavesurferRef.current.setVolume(newVol);
+      wavesurferRef.current.setVolume(newVol * masterVolumeRef.current);
     }
     if (gainNodeRef.current) {
       const ctx = window.sharedAudioContext;
@@ -248,7 +312,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
         if (ctx.state === 'suspended') {
           ctx.resume().catch(err => console.warn('Context resume failed:', err));
         }
-        gainNodeRef.current.gain.setValueAtTime(newVol, ctx.currentTime);
+        gainNodeRef.current.gain.setValueAtTime(newVol * masterVolumeRef.current, ctx.currentTime);
       }
     }
     dispatchUpdate();

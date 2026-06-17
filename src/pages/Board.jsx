@@ -269,6 +269,38 @@ export default function Board() {
     });
   }, []);
 
+  const [masterVolume, setMasterVolume] = useState(() => {
+    const saved = localStorage.getItem('sorinote_master_volume');
+    return saved !== null ? parseFloat(saved) : 1.0;
+  });
+  const [hasPausedAudios, setHasPausedAudios] = useState(false);
+
+  const handleMasterVolumeChange = (newVol) => {
+    setMasterVolume(newVol);
+    localStorage.setItem('sorinote_master_volume', newVol);
+    const event = new CustomEvent('master-volume-change', { detail: { volume: newVol } });
+    window.dispatchEvent(event);
+  };
+
+  const handleMasterPlayPause = () => {
+    if (playingMemoIds.size > 0) {
+      const event = new CustomEvent('master-pause-all');
+      window.dispatchEvent(event);
+      setHasPausedAudios(true);
+    } else if (hasPausedAudios) {
+      const event = new CustomEvent('master-resume-all');
+      window.dispatchEvent(event);
+      setHasPausedAudios(false);
+    }
+  };
+
+  const handleMasterStop = () => {
+    const event = new CustomEvent('master-stop-all');
+    window.dispatchEvent(event);
+    setHasPausedAudios(false);
+    setPlayingMemoIds(new Set());
+  };
+
   const minZoom = Math.min(Math.max(400, viewportSize.width - 40) / CANVAS_SIZE, Math.max(300, viewportSize.height - 180) / CANVAS_SIZE);
   const offsetX = Math.max(0, (viewportSize.width - CANVAS_SIZE * zoomLevel) / 2);
   const offsetY = Math.max(0, (viewportSize.height - CANVAS_SIZE * zoomLevel) / 2);
@@ -2166,7 +2198,103 @@ export default function Board() {
           position: 'fixed', bottom: '20px', right: '20px',
           transform: `scale(${uiScale})`, transformOrigin: 'bottom right', 
           zIndex: 2000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: '8px'
       }}>
+        {/* Master Out Mixer Panel */}
+        <div style={{
+          width: `${MINIMAP_SIZE}px`,
+          height: '40px',
+          backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
+          border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px solid #d0d0d0' : '1px solid #000000',
+          boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 10px',
+          boxSizing: 'border-box',
+          userSelect: 'none',
+          fontFamily: 'monospace',
+          color: '#000000',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '9px', fontWeight: 'bold', letterSpacing: '0.5px' }}>MASTER OUT</span>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888', transition: 'background-color 0.2s', animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none' }}></div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Play/Pause Button */}
+            <button 
+              onClick={handleMasterPlayPause}
+              disabled={playingMemoIds.size === 0 && !hasPausedAudios}
+              style={{
+                background: 'none',
+                border: '1px solid #000000',
+                borderRadius: '0px',
+                cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
+                opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
+                width: '22px',
+                height: '22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                padding: 0
+              }}
+              title={playingMemoIds.size > 0 ? "모두 일시정지" : "모두 재생"}
+            >
+              {playingMemoIds.size > 0 ? '⏸' : '▶'}
+            </button>
+            
+            {/* Stop Button */}
+            <button 
+              onClick={handleMasterStop}
+              disabled={playingMemoIds.size === 0 && !hasPausedAudios}
+              style={{
+                background: 'none',
+                border: '1px solid #000000',
+                borderRadius: '0px',
+                cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
+                opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
+                width: '22px',
+                height: '22px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                fontWeight: 'bold',
+                padding: 0
+              }}
+              title="모두 정지"
+            >
+              ■
+            </button>
+          </div>
+
+          {/* Master Volume Slider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '105px' }}>
+            <span style={{ fontSize: '9px', fontWeight: 'bold' }}>*~</span>
+            <span style={{ fontSize: '9px', fontWeight: 'bold' }}>0</span>
+            <input 
+              type="range"
+              min="0" max="1" step="0.01"
+              value={masterVolume}
+              onChange={(e) => handleMasterVolumeChange(parseFloat(e.target.value))}
+              className="retro-volume-slider"
+              style={{
+                flex: 1,
+                '--slider-color': '#000000'
+              }}
+              title="마스터 볼륨"
+            />
+            <span style={{ fontSize: '9px', fontWeight: 'bold' }}>1</span>
+          </div>
+        </div>
+
         <div 
           ref={minimapRef}
           onPointerDown={handleMinimapPointerDown}
