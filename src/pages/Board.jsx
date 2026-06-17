@@ -2225,7 +2225,7 @@ export default function Board() {
           flexShrink: 0
         }}>
           {/* Header (Title) */}
-          <span style={{ fontSize: '8px', fontWeight: 'bold', transform: 'scale(0.85)', letterSpacing: '0.2px' }}>main</span>
+          <span style={{ fontSize: '11px', fontWeight: 'bold', letterSpacing: '0.2px' }}>main</span>
 
           {/* LED Indicator Dot */}
           <div style={{ 
