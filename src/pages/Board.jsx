@@ -128,10 +128,7 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
             color: indicatorColor, 
             fontWeight: 'bold', 
             animation: 'minimap-blink 0.8s infinite',
-            fontFamily: 'monospace',
-            textShadow: indicatorColor === '#000000'
-              ? '0 0 2px rgba(255, 255, 255, 0.8)'
-              : '0 0 2px rgba(0, 0, 0, 0.8)'
+            fontFamily: 'monospace'
           }}
         >
           {playInfo ? playInfo.volume.toFixed(1) : '0.5'}
