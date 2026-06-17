@@ -272,7 +272,7 @@ export default function Board() {
     });
 
     return () => observer.disconnect();
-  }, [memos]);
+  }, [memos, draggingMemo, activeMemoId, playingMemoIds, scrollPos, viewportSize, zoomLevel, offsetX, offsetY]);
       
   const [draggingMemo, setDraggingMemo] = useState(null);
   const [isDraggingMinimap, setIsDraggingMinimap] = useState(false); 
