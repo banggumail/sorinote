@@ -342,7 +342,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
         <span>{currentTime}</span>
         <span>{duration}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', alignSelf: 'flex-start' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', width: '100%' }}>
         <div 
           className="retro-slider-container"
           style={{ 
@@ -381,15 +381,14 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
             background: isLooping ? resolvedColor : 'transparent',
             color: isLooping ? (textColor === '#ffffff' ? '#000000' : '#ffffff') : textColor,
             border: `1px solid ${resolvedColor}`,
-            borderRadius: '2px',
+            borderRadius: '0px',
             fontSize: '8px',
             fontWeight: 'bold',
-            padding: '1px 4px',
+            padding: '1px 5px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '2px',
             transition: 'all 0.15s ease',
             outline: 'none',
             height: '14px',
@@ -399,8 +398,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           }}
           title={isLooping ? "반복 재생 켬" : "반복 재생 끔"}
         >
-          <span>LOOP</span>
-          {isLooping && <span style={{ fontSize: '6px' }}>●</span>}
+          <span>loop</span>
         </button>
       </div>
     </div>
