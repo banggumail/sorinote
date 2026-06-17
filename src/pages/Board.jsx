@@ -2110,7 +2110,7 @@ export default function Board() {
       </div>
 
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'bottom center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', padding: '6px 10px', border: 'none', width: '250px', height: '52px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', padding: '4px 10px', border: 'none', width: '250px', height: '40px', boxSizing: 'border-box' }}>
         {(() => {
           const zoomStages = [minZoom, minZoom + (1.0 - minZoom) * 0.5, 1.0, 1.5];
           let currentStage = 0;
