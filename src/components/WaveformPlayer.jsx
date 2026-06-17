@@ -355,7 +355,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           }}
         >
           <span style={{ fontSize: '9px', opacity: 0.8, letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>*~</span>
-          <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>0</span>
+          <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', fontWeight: 'bold' }}>0</span>
           <input 
             type="range" 
             min="0" max="1" step="0.01" 
@@ -369,7 +369,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
             className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
             title="볼륨 조절"
           />
-          <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px', fontWeight: 'bold' }}>1</span>
+          <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', fontWeight: 'bold' }}>1</span>
         </div>
 
         <button
