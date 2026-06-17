@@ -1675,7 +1675,7 @@ export default function Board() {
         className="info-circle"
         style={{ 
           transform: `scale(${uiScale})`, transformOrigin: 'top left', position: 'fixed', top: '20px', left: '20px', width: '150px', height: '150px',
-          borderRadius: '50%', background: 'white', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '2px inset #d0d0d0' : '2px inset #ffffff',
+          borderRadius: '50%', background: 'white', border: 'none',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           zIndex: 2000, padding: '10px',
           textAlign: 'center', wordBreak: 'keep-all', overflowWrap: 'break-word', pointerEvents: 'auto', cursor: 'pointer'
@@ -1693,7 +1693,7 @@ export default function Board() {
 
       {/* 중앙 상단: 작성자 설정 및 리소스 카운트 통합 패널 */}
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'top center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'white', padding: '10px 12px 8px 12px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '2px inset #d0d0d0' : '2px inset #ffffff', width: '250px', boxSizing: 'border-box', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'white', padding: '10px 12px 8px 12px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', width: '250px', boxSizing: 'border-box', gap: '8px' }}>
           {/* Row 1: 인풋 필드 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
             <input 
@@ -1726,7 +1726,7 @@ export default function Board() {
       </div>
 
       {/* 우측 상단: 글쓰기 동그라미 버튼 */}
-      <button onPointerDown={(e) => e.stopPropagation()} className={`write-btn ${isWriting ? 'active' : ''}`} onClick={handleWriteNew} style={{ transform: `scale(${uiScale})`, transformOrigin: 'top right', position: 'fixed', top: '20px', right: '20px', margin: 0, zIndex: 2000, pointerEvents: 'auto', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '2px inset #d0d0d0' : '2px inset #ffffff' }}>
+      <button onPointerDown={(e) => e.stopPropagation()} className={`write-btn ${isWriting ? 'active' : ''}`} onClick={handleWriteNew} style={{ transform: `scale(${uiScale})`, transformOrigin: 'top right', position: 'fixed', top: '20px', right: '20px', margin: 0, zIndex: 2000, pointerEvents: 'auto', border: 'none' }}>
         쓰기
       </button>
 
@@ -1742,7 +1742,7 @@ export default function Board() {
             position: 'fixed', bottom: '20px', left: '20px',
             transform: `scale(${uiScale})`, transformOrigin: 'bottom left', 
             width: '150px', height: '150px', borderRadius: '50%',
-            background: activeMemo.color || 'white', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '2px inset #d0d0d0' : '2px inset #ffffff', 
+            background: activeMemo.color || 'white', border: 'none', 
             zIndex: 3000, pointerEvents: 'auto', cursor: 'pointer',
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             textAlign: 'center', padding: '10px', wordBreak: 'keep-all', overflowWrap: 'break-word', gap: '6px',
@@ -2208,7 +2208,7 @@ export default function Board() {
           width: '54px',
           height: '300px',
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
-          border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '2px inset #d0d0d0' : '2px inset #ffffff',
+          border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff',
           boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
@@ -2320,7 +2320,7 @@ export default function Board() {
           width: `${MINIMAP_SIZE}px`,
           height: `${MINIMAP_SIZE}px`, 
           backgroundColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#E8E8E8' : '#ffffff', 
-          border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '2px inset #d0d0d0' : '2px inset #ffffff', 
+          border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', 
           cursor: isDraggingMinimap ? 'grabbing' : 'crosshair',
           touchAction: 'none',
           overflow: 'hidden'
@@ -2344,7 +2344,7 @@ export default function Board() {
       </div>
 
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'bottom center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', padding: '4px 10px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '2px inset #d0d0d0' : '2px inset #ffffff', width: '250px', height: '40px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', padding: '4px 10px', border: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '1px outset #d0d0d0' : '1px outset #ffffff', width: '250px', height: '40px', boxSizing: 'border-box' }}>
         {(() => {
           const zoomStages = [minZoom, minZoom + (1.0 - minZoom) * 0.5, 1.0, 1.5];
           let currentStage = 0;
