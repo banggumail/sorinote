@@ -205,6 +205,7 @@ export default function Board() {
   const [padTitleColor, setPadTitleColor] = useState('');
   const [lastUsedUser, setLastUsedUser] = useState({ name: 'name', color: '#ffffff' });
   const [memos, setMemos] = useState([]);
+  const [memoSizes, setMemoSizes] = useState({});
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -234,7 +235,44 @@ export default function Board() {
     }
   };
 
+  useEffect(() => {
+    const observer = new ResizeObserver(entries => {
+      setMemoSizes(prev => {
+        const next = { ...prev };
+        let changed = false;
+        for (let entry of entries) {
+          const id = entry.target.id.replace('memo-', '');
+          const memo = memos.find(m => String(m.id) === id);
+          if (!memo) continue;
 
+          const w = entry.target.offsetWidth;
+          const h = entry.target.offsetHeight;
+
+          // Unscaled height layout key based on state change
+          const currentLayoutKey = `${memo.id}-${memo.isExpanded}-${memo.isEditing}-${!!memo.audioUrl}-${!!memo.imageUrl}-${memo.title}-${memo.content}`;
+
+          const prevData = prev[id];
+          // Update only if no previous size, layoutKey changed, or height changed significantly (e.g. >15px for lazy images)
+          if (
+            !prevData || 
+            prevData.layoutKey !== currentLayoutKey || 
+            Math.abs(prevData.h - h) > 15
+          ) {
+            next[id] = { w, h, layoutKey: currentLayoutKey };
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    });
+    
+    memos.forEach(m => {
+      const el = document.getElementById(`memo-${m.id}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [memos]);
       
   const [draggingMemo, setDraggingMemo] = useState(null);
   const [isDraggingMinimap, setIsDraggingMinimap] = useState(false); 
@@ -474,7 +512,9 @@ export default function Board() {
     const activeMemo = activeMemoId ? memos.find(m => m.id === activeMemoId) : null;
     
     if (activeMemo) {
-      const { w, h } = getMemoSize(activeMemo);
+      const memoSize = memoSizes[activeMemoId] || getMemoSize(activeMemo);
+      const w = memoSize.w;
+      const h = memoSize.h;
       cx = activeMemo.x + w / 2;
       cy = activeMemo.y + h / 2;
     } else {
@@ -2140,7 +2180,9 @@ export default function Board() {
           }}
         >
         {memos.map(m => {
-          const { w, h } = getMemoSize(m);
+          const memoSize = memoSizes[m.id] || getMemoSize(m);
+          const w = memoSize.w;
+          const h = memoSize.h;
           return (
             <MinimapMemo key={`mini-${m.id}`} memo={m} scaleRate={scaleRate} w={w} h={h} />
           );
