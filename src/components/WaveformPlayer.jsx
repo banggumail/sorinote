@@ -191,14 +191,16 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
         style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: '6px', 
+          gap: '5px', 
           marginTop: '4px', 
           padding: '0 4px',
           color: textColor,
-          '--slider-color': textColor
+          '--slider-color': textColor,
+          width: '130px'
         }}
       >
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '8px' }}>0</span>
+        <span style={{ fontSize: '9px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '2px', fontWeight: 'bold' }}>vol</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '6px' }}>0</span>
         <input 
           type="range" 
           min="0" max="1" step="0.01" 
@@ -212,7 +214,7 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
           className={`retro-volume-slider ${textColor === '#ffffff' ? 'dark-theme-slider' : ''}`}
           title="볼륨 조절"
         />
-        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '12px' }}>10</span>
+        <span className="retro-slider-label" style={{ fontSize: '9px', opacity: 0.8, fontFamily: 'monospace', minWidth: '6px' }}>1</span>
       </div>
     </div>
   );
