@@ -155,6 +155,19 @@ export default function Board() {
   const [canvasBgColor, setCanvasBgColor] = useState('#FDFBF7');
   const [outerBgColor, setOuterBgColor] = useState('#E0E0D0');
   const [activeMemoId, setActiveMemoId] = useState(null);
+  const [playingMemoIds, setPlayingMemoIds] = useState(new Set());
+
+  const handlePlayStateChange = useCallback((memoId, isPlaying) => {
+    setPlayingMemoIds(prev => {
+      const next = new Set(prev);
+      if (isPlaying) {
+        next.add(memoId);
+      } else {
+        next.delete(memoId);
+      }
+      return next;
+    });
+  }, []);
 
   const minZoom = Math.min(Math.max(400, viewportSize.width - 40) / CANVAS_SIZE, Math.max(300, viewportSize.height - 180) / CANVAS_SIZE);
   const offsetX = Math.max(0, (viewportSize.width - CANVAS_SIZE * zoomLevel) / 2);
@@ -162,7 +175,7 @@ export default function Board() {
   const uiScale = Math.min(1, Math.max(0.71, viewportSize.width / 1920));
 
   const isMemoVisible = useCallback((memo) => {
-    if (draggingMemo?.id === memo.id || activeMemoId === memo.id || memo.isEditing || memo.isExpanded) {
+    if (draggingMemo?.id === memo.id || activeMemoId === memo.id || memo.isEditing || memo.isExpanded || playingMemoIds.has(memo.id)) {
       return true;
     }
 
@@ -194,7 +207,7 @@ export default function Board() {
       memoBottom >= bufferedTop &&
       memoTop <= bufferedBottom
     );
-  }, [scrollPos, viewportSize, zoomLevel, offsetX, offsetY, draggingMemo, activeMemoId]);
+  }, [scrollPos, viewportSize, zoomLevel, offsetX, offsetY, draggingMemo, activeMemoId, playingMemoIds]);
 
   const scrollRefCallback = useCallback((el) => {
     if (resizeObserverRef.current) {
@@ -873,7 +886,7 @@ export default function Board() {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} />
+                                <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                               </div>
                               <input 
                                 className="square-color-picker"
@@ -997,7 +1010,7 @@ export default function Board() {
                       
                       {m.audioUrl && (
                         <div style={{ margin: '4px 0' }} onClick={(e) => e.stopPropagation()}>
-                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} />
+                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                         </div>
                       )}
 
@@ -1256,7 +1269,7 @@ export default function Board() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} />
+                      <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                     </div>
                     <input 
                       className="square-color-picker"
@@ -1830,7 +1843,7 @@ export default function Board() {
                         {m.audioUrl && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} />
+                              <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                             </div>
                             <input 
                               className="square-color-picker"
@@ -1948,7 +1961,7 @@ export default function Board() {
 
                       {m.audioUrl && (
                         <div style={{ marginTop: '5px', marginBottom: '5px' }}>
-                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} />
+                          <WaveformPlayer audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                         </div>
                       )}
                       
