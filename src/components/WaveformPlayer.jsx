@@ -274,8 +274,8 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           appearance: none;
           width: 10px;
           height: 14px;
-          background: #cccccc;
-          border: 1px solid #ffffff;
+          background: var(--slider-color, currentColor);
+          border: 1px groove #ffffff;
           border-radius: 0px;
           margin-top: -4px;
         }
@@ -287,8 +287,8 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
         .retro-volume-slider::-moz-range-thumb {
           width: 10px;
           height: 14px;
-          background: #cccccc;
-          border: 1px solid #ffffff;
+          background: var(--slider-color, currentColor);
+          border: 1px groove #ffffff;
           border-radius: 0px;
           box-sizing: border-box;
         }
@@ -329,7 +329,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           marginTop: '4px', 
           padding: '0 4px',
           color: textColor,
-          '--slider-color': textColor,
+          '--slider-color': resolvedColor,
           width: '120px',
           alignSelf: 'flex-start'
         }}
