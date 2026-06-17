@@ -25,8 +25,49 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
   const [currentTime, setCurrentTime] = useState('0:00');
   const [duration, setDuration] = useState('0:00');
   const [volume, setVolume] = useState(1);
+  const gainNodeRef = useRef(null);
 
   const resolvedColor = customColor || (textColor === "#ffffff" ? "#ffffff" : "#000000");
+
+  const initWebAudioVolume = () => {
+    if (gainNodeRef.current) return;
+    if (!wavesurferRef.current) return;
+
+    const mediaElement = wavesurferRef.current.getMediaElement();
+    if (!mediaElement) return;
+
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      if (!window.sharedAudioContext) {
+        window.sharedAudioContext = new AudioContextClass();
+      }
+      const ctx = window.sharedAudioContext;
+
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(err => console.warn('Context resume failed:', err));
+      }
+
+      let sourceNode = mediaElement.__webAudioSource;
+      let gainNode = mediaElement.__webAudioGain;
+
+      if (!sourceNode) {
+        sourceNode = ctx.createMediaElementSource(mediaElement);
+        gainNode = ctx.createGain();
+        sourceNode.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        mediaElement.__webAudioSource = sourceNode;
+        mediaElement.__webAudioGain = gainNode;
+      }
+
+      gainNodeRef.current = gainNode;
+      gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+    } catch (err) {
+      console.warn('Web Audio initialization failed:', err);
+    }
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -92,6 +133,10 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
 
   const togglePlay = (e) => {
     e.stopPropagation();
+    initWebAudioVolume();
+    if (window.sharedAudioContext && window.sharedAudioContext.state === 'suspended') {
+      window.sharedAudioContext.resume().catch(err => console.warn('Context resume failed:', err));
+    }
     if (wavesurferRef.current) {
       wavesurferRef.current.playPause().catch(err => {
         console.error('Play/Pause failed:', err);
@@ -103,8 +148,18 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
     e.stopPropagation();
     const newVol = parseFloat(e.target.value);
     setVolume(newVol);
+    initWebAudioVolume();
     if (wavesurferRef.current) {
       wavesurferRef.current.setVolume(newVol);
+    }
+    if (gainNodeRef.current) {
+      const ctx = window.sharedAudioContext;
+      if (ctx) {
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(err => console.warn('Context resume failed:', err));
+        }
+        gainNodeRef.current.gain.setValueAtTime(newVol, ctx.currentTime);
+      }
     }
   };
 
@@ -136,13 +191,13 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
         .retro-volume-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 12px;
-          height: 16px;
-          background: linear-gradient(90deg, #ffffff 0%, #dddddd 30%, #444444 45%, #444444 55%, #dddddd 70%, #ffffff 100%);
-          border: 1px solid var(--slider-color, currentColor);
-          border-radius: 1px;
-          margin-top: -5px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+          width: 10px;
+          height: 14px;
+          background: #cccccc;
+          border: 2px outset #ffffff;
+          border-radius: 0px;
+          margin-top: -4px;
+          box-shadow: 1px 1.5px 3px rgba(0,0,0,0.4);
         }
         .retro-volume-slider::-moz-range-track {
           background: transparent;
@@ -150,12 +205,12 @@ export default function WaveformPlayer({ audioUrl, fileName, textColor = "#00000
           height: 6px;
         }
         .retro-volume-slider::-moz-range-thumb {
-          width: 12px;
-          height: 16px;
-          background: linear-gradient(90deg, #ffffff 0%, #dddddd 30%, #444444 45%, #444444 55%, #dddddd 70%, #ffffff 100%);
-          border: 1px solid var(--slider-color, currentColor);
-          border-radius: 1px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+          width: 10px;
+          height: 14px;
+          background: #cccccc;
+          border: 2px outset #ffffff;
+          border-radius: 0px;
+          box-shadow: 1px 1.5px 3px rgba(0,0,0,0.4);
           box-sizing: border-box;
         }
       `}</style>
