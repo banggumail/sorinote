@@ -74,6 +74,13 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
   const contrastColor = getContrastColor(memo.color);
   const isPlaying = !!playInfo;
 
+  let indicatorColor = '#ff3b30';
+  if (isReddish(memo.color)) {
+    indicatorColor = contrastColor;
+  } else if (contrastColor === '#ffffff') {
+    indicatorColor = '#ffcc00';
+  }
+
   const blockW = Math.max(16, w * scaleRate);
   const blockH = Math.max(12, h * scaleRate);
 
@@ -86,7 +93,7 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
         width: blockW + 'px',
         height: blockH + 'px',
         backgroundColor: memo.color, 
-        border: isPlaying ? '1.5px solid #ff3b30' : '1px solid #000', 
+        border: isPlaying ? `1.5px solid ${indicatorColor}` : '1px solid #000', 
         boxShadow: '1px 1px 0px rgba(0,0,0,0.5)', 
         boxSizing: 'border-box',
         display: 'flex',
@@ -98,7 +105,17 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
       }}
     >
       {isPlaying && (
-        <span style={{ fontSize: '9px', color: '#ff3b30', fontWeight: 'bold', animation: 'minimap-blink 0.8s infinite' }}>P</span>
+        <span 
+          style={{ 
+            fontSize: '9px', 
+            color: indicatorColor, 
+            fontWeight: 'bold', 
+            animation: 'minimap-blink 0.8s infinite',
+            fontFamily: 'monospace'
+          }}
+        >
+          {playInfo ? playInfo.volume.toFixed(1) : '0.5'}
+        </span>
       )}
     </div>
   );
