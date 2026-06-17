@@ -374,7 +374,6 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
-// List all pads
 app.get('/api/pads', async (req, res) => {
   try {
     const db = await getDb();
@@ -386,8 +385,17 @@ app.get('/api/pads', async (req, res) => {
       FROM pads p
       LEFT JOIN memos m ON p.id = m.padId
       GROUP BY p.id
-      ORDER BY p.date DESC
     `);
+
+    // Sort in JS to handle both unpadded (e.g. YYYY.M.D) and padded dates correctly chronologically (descending)
+    const parseCustomDate = (dateStr) => {
+      if (!dateStr) return 0;
+      const normalized = dateStr.replace(/\./g, '-');
+      const d = new Date(normalized);
+      return isNaN(d.getTime()) ? 0 : d.getTime();
+    };
+    rows.sort((a, b) => parseCustomDate(b.date) - parseCustomDate(a.date));
+
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });

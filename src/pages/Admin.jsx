@@ -350,7 +350,7 @@ export default function Admin() {
       const id = padId.trim();
       const title = padTitle.trim();
       const date = new Date();
-      const formattedDate = `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+      const formattedDate = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
       const newPad = { id, title, date: formattedDate, canvasBgColor: initCanvasBg, outerBgColor: initOuterBg, titleColor: initTitleColor, isPrivate: isPrivate ? 1 : 0 };
 
       fetch(`${API_BASE}/api/pads`, {
