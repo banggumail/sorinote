@@ -2221,7 +2221,7 @@ export default function Board() {
                   style={{ width: '100%', position: 'relative', zIndex: 2 }}
                 />
                 {/* 슬라이더 트랙 아래에 배치되어 비쳐 보이는 4단계 눈금선들 */}
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', height: '6px', pointerEvents: 'none', display: 'flex', justifyContent: 'space-between', padding: '0 3px', boxSizing: 'border-box', zIndex: 1 }}>
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', height: '6px', pointerEvents: 'none', display: 'flex', justifyContent: 'space-between', padding: '0 5px', boxSizing: 'border-box', zIndex: 1 }}>
                   <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
                   <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
                   <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
