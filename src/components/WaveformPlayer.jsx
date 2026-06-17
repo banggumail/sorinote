@@ -275,7 +275,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           width: 10px;
           height: 14px;
           background: var(--slider-color, currentColor);
-          border: 1px groove #ffffff;
+          border: 1px groove rgba(255, 255, 255, 0.5);
           border-radius: 0px;
           margin-top: -4px;
         }
@@ -288,7 +288,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           width: 10px;
           height: 14px;
           background: var(--slider-color, currentColor);
-          border: 1px groove #ffffff;
+          border: 1px groove rgba(255, 255, 255, 0.5);
           border-radius: 0px;
           box-sizing: border-box;
         }
