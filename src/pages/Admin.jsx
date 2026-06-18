@@ -1102,7 +1102,7 @@ export default function Admin() {
               <div className="create-world-input-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <input
                   type="text"
-                  placeholder="world name"
+                  placeholder="World Name"
                   value={padTitle}
                   onChange={(e) => setPadTitle(e.target.value)}
                   style={{ padding: '8px', fontSize: '16px', border: '1px solid #ccc', fontFamily: 'inherit', flex: 1 }}
@@ -1196,7 +1196,7 @@ export default function Admin() {
                     wordBreak: 'break-all',
                     transition: 'all 0.3s'
                   }}>
-                    {padTitle.trim() || 'world name'}
+                    {padTitle.trim() || 'World Name'}
                   </span>
                 </div>
               </div>
