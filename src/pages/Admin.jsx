@@ -1072,7 +1072,7 @@ export default function Admin() {
                 <div className="create-world-input-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <input
                     type="text"
-                    placeholder="url"
+                    placeholder="World Address"
                     value={padId}
                     onChange={(e) => setPadId(e.target.value)}
                     style={{
@@ -1182,7 +1182,7 @@ export default function Admin() {
                     wordBreak: 'break-all',
                     textAlign: 'left'
                   }}>
-                    {window.location.origin}/{padId.trim() || 'url'}
+                    {window.location.origin}/{padId.trim() || 'World Address'}
                   </span>
                   <span style={{
                     background: getComplementaryColor(initTitleColor || '#0056b3'),
