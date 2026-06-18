@@ -1725,7 +1725,7 @@ export default function Board() {
               onChange={(e) => handleUserChange({ ...lastUsedUser, name: e.target.value })} 
               onFocus={(e) => { if (e.target.value === 'name') handleUserChange({ ...lastUsedUser, name: '' }); }}
               placeholder="작성자 이름"
-              style={{ padding: '4px 8px', fontSize: '18px', fontWeight: 'normal', border: '1px solid #ccc', width: '160px', outline: 'none' }}
+              style={{ padding: '4px 8px', fontSize: '18px', fontWeight: 'normal', border: '1px solid #ccc', width: '160px', outline: 'none', fontFamily: 'inherit' }}
             />
           </div>
 
