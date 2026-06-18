@@ -225,6 +225,7 @@ export default function Board() {
   const [lockedMemos, setLockedMemos] = useState({});
   const [cursors, setCursors] = useState({});
   const [deleteConfirmMemoId, setDeleteConfirmMemoId] = useState(null);
+  const [deletePromptMemoId, setDeletePromptMemoId] = useState(null);
   const socketRef = useRef(null);
   const lastCursorEmit = useRef(0);
 
@@ -666,20 +667,24 @@ export default function Board() {
     }
   };
 
+  const performDeleteMemo = (id) => {
+    setMemos(prev => prev.filter(m => m.id !== id));
+    setLockedMemos(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (activeMemoId === id) setActiveMemoId(null);
+    setDeleteConfirmMemoId(null);
+    
+    if (socketRef.current) {
+      socketRef.current.emit('memo:delete', { padId, id });
+    }
+  };
+
   const handleDeleteMemo = (id) => {
     if (deleteConfirmMemoId === id) {
-      setMemos(prev => prev.filter(m => m.id !== id));
-      setLockedMemos(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      if (activeMemoId === id) setActiveMemoId(null);
-      setDeleteConfirmMemoId(null);
-      
-      if (socketRef.current) {
-        socketRef.current.emit('memo:delete', { padId, id });
-      }
+      setDeletePromptMemoId(id);
     } else {
       setDeleteConfirmMemoId(id);
       setTimeout(() => {
@@ -2587,6 +2592,87 @@ export default function Board() {
         })()}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deletePromptMemoId && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            setDeletePromptMemoId(null);
+          }}
+        >
+          <div 
+            style={{
+              background: '#e8e8e8',
+              border: '1px solid #000',
+              boxShadow: '4px 4px 0px rgba(0,0,0,1)',
+              padding: '24px',
+              width: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px'
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', fontFamily: 'monospace', textAlign: 'center' }}>
+              are you sure?
+            </div>
+            <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+              <button 
+                onClick={() => {
+                  performDeleteMemo(deletePromptMemoId);
+                  setDeletePromptMemoId(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                yes
+              </button>
+              <button 
+                onClick={() => setDeletePromptMemoId(null)}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                no
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
