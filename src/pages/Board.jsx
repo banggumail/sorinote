@@ -226,6 +226,7 @@ export default function Board() {
   const [cursors, setCursors] = useState({});
   const [deleteConfirmMemoId, setDeleteConfirmMemoId] = useState(null);
   const [deletePromptMemoId, setDeletePromptMemoId] = useState(null);
+  const [deletePromptCommentId, setDeletePromptCommentId] = useState(null);
   const socketRef = useRef(null);
   const lastCursorEmit = useRef(0);
 
@@ -750,10 +751,6 @@ export default function Board() {
           flexShrink: 0
         }}
       >
-        <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8, color: m.titleColor || textColor, marginBottom: '4px' }}>
-          Comments ({memoComments.length})
-        </div>
-
         {memoComments.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
             {memoComments.map(comment => (
@@ -766,41 +763,38 @@ export default function Board() {
                   padding: '6px', 
                   background: 'rgba(0, 0, 0, 0.05)', 
                   border: `1px solid ${borderColor}`,
-                  boxShadow: '1px 1px 0px rgba(0,0,0,1)',
                   position: 'relative' 
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontWeight: 'bold', color: m.titleColor || textColor }}>
-                    {comment.author}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '9px', opacity: 0.6, color: m.contentColor || textColor }}>
-                      {comment.date}
-                    </span>
-                    <button 
-                      onClick={() => handleDeleteComment(comment.id)}
-                      style={{ 
-                        background: 'none', 
-                        border: 'none', 
-                        cursor: 'pointer', 
-                        fontSize: '9px', 
-                        color: m.contentColor || textColor, 
-                        opacity: 0.6, 
-                        padding: '0 2px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontFamily: 'inherit'
-                      }}
-                      title="댓글 삭제 / Delete comment"
-                    >
-                      ✕
-                    </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ color: m.contentColor || textColor, wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: '1.4', flex: 1 }}>
+                    {comment.content}
                   </div>
+                  <button 
+                    onClick={() => setDeletePromptCommentId(comment.id)}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      fontSize: '9px', 
+                      color: m.contentColor || textColor, 
+                      opacity: 0.6, 
+                      padding: '0 2px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'inherit',
+                      marginTop: '2px'
+                    }}
+                    title="댓글 삭제 / Delete comment"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div style={{ color: m.contentColor || textColor, wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '4px', lineHeight: '1.4' }}>
-                  {comment.content}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                  <span style={{ fontSize: '9px', opacity: 0.6, color: m.contentColor || textColor }}>
+                    {comment.date}
+                  </span>
                 </div>
               </div>
             ))}
@@ -2679,6 +2673,87 @@ export default function Board() {
               </button>
               <button 
                 onClick={() => setDeletePromptMemoId(null)}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                no
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comment Delete Confirmation Modal */}
+      {deletePromptCommentId && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            setDeletePromptCommentId(null);
+          }}
+        >
+          <div 
+            style={{
+              background: '#e8e8e8',
+              border: '1px solid #000',
+              boxShadow: '4px 4px 0px rgba(0,0,0,1)',
+              padding: '24px',
+              width: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px'
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', fontFamily: 'monospace', textAlign: 'center' }}>
+              are you sure?
+            </div>
+            <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+              <button 
+                onClick={() => {
+                  handleDeleteComment(deletePromptCommentId);
+                  setDeletePromptCommentId(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                yes
+              </button>
+              <button 
+                onClick={() => setDeletePromptCommentId(null)}
                 style={{
                   flex: 1,
                   padding: '8px',
