@@ -1374,7 +1374,7 @@ export default function Board() {
                         <button 
                           className="mobile-action-btn"
                           onClick={() => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo))}
-                          style={{ color: textColor, fontWeight: 'bold' }}
+                          style={{ color: textColor, fontWeight: 'normal' }}
                         >
                           comments ({comments.filter(c => c.memoId === m.id).length})
                         </button>
@@ -2359,9 +2359,9 @@ export default function Board() {
                           cursor: 'pointer', 
                           fontSize: '13px', 
                           color: textColor, 
-                          textDecoration: 'underline',
+                          textDecoration: 'none',
                           padding: 0,
-                          fontWeight: 'bold',
+                          fontWeight: 'normal',
                           fontFamily: 'inherit'
                         }}
                       >
@@ -2375,7 +2375,7 @@ export default function Board() {
                           </span>
                         ) : (
                           <>
-                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'underline', padding: 0, fontFamily: 'inherit' }}>edit</button>
+                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'none', padding: 0, fontFamily: 'inherit', fontWeight: 'normal' }}>edit</button>
                             <button 
                               onClick={() => handleDeleteMemo(m.id)} 
                               style={{ 
@@ -2386,8 +2386,8 @@ export default function Board() {
                                 color: deleteConfirmMemoId === m.id ? 'white' : textColor, 
                                 padding: deleteConfirmMemoId === m.id ? '2px 6px' : '0',
                                 borderRadius: '0px',
-                                textDecoration: deleteConfirmMemoId === m.id ? 'none' : 'underline',
-                                fontWeight: deleteConfirmMemoId === m.id ? 'bold' : 'normal',
+                                textDecoration: 'none',
+                                fontWeight: 'normal',
                                 transition: 'all 0.2s',
                                 fontFamily: 'inherit'
                               }}
