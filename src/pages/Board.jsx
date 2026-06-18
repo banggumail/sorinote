@@ -799,7 +799,7 @@ export default function Board() {
 
         <form 
           onSubmit={(e) => handleSubmitComment(e, m.id)}
-          style={{ display: 'flex', gap: '6px', marginTop: '4px' }}
+          style={{ display: 'flex', alignItems: 'stretch', gap: '6px', marginTop: '4px' }}
         >
           <input
             type="text"
@@ -821,7 +821,7 @@ export default function Board() {
           <button
             type="submit"
             style={{
-              padding: '3px 8px',
+              padding: '0 8px',
               fontSize: '10px',
               fontWeight: 'normal',
               border: `1px solid ${borderColor}`,
