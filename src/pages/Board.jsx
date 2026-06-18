@@ -1380,26 +1380,24 @@ export default function Board() {
                           comments ({comments.filter(c => c.memoId === m.id).length})
                         </button>
 
-                        {m.isExpanded && (
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            {isLocked ? (
-                              <span style={{ fontSize: '12px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
-                                {lockedMemos[m.id]} is editing...
-                              </span>
-                            ) : (
-                              <>
-                                <button className="mobile-action-btn" onClick={() => handleEditMemo(m.id)} style={{ color: textColor }}>edit</button>
-                                <button 
-                                  className={`mobile-action-btn ${deleteConfirmMemoId === m.id ? `mobile-delete-confirm-btn ${isReddish(m.color) ? 'red-bg-confirm' : ''}` : ''}`}
-                                  onClick={() => handleDeleteMemo(m.id)} 
-                                  style={{ color: deleteConfirmMemoId === m.id ? '#fff' : textColor }}
-                                >
-                                  {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
+                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                          {isLocked ? (
+                            <span style={{ fontSize: '12px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
+                              {lockedMemos[m.id]} is editing...
+                            </span>
+                          ) : (
+                            <>
+                              <button className="mobile-action-btn" onClick={() => handleEditMemo(m.id)} style={{ color: textColor }}>edit</button>
+                              <button 
+                                className={`mobile-action-btn ${deleteConfirmMemoId === m.id ? `mobile-delete-confirm-btn ${isReddish(m.color) ? 'red-bg-confirm' : ''}` : ''}`}
+                                onClick={() => handleDeleteMemo(m.id)} 
+                                style={{ color: deleteConfirmMemoId === m.id ? '#fff' : textColor }}
+                              >
+                                {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </>
                   )}
@@ -2354,7 +2352,7 @@ export default function Board() {
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'transparent', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'transparent', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                       <button 
                         onClick={() => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo))}
                         style={{ 
@@ -2371,36 +2369,34 @@ export default function Board() {
                         comments ({comments.filter(c => c.memoId === m.id).length})
                       </button>
 
-                      {m.isExpanded && (
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                          {isLocked ? (
-                            <span style={{ fontSize: '13px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
-                              {lockedMemos[m.id]} is editing...
-                            </span>
-                          ) : (
-                            <>
-                              <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'underline', padding: 0 }}>edit</button>
-                              <button 
-                                onClick={() => handleDeleteMemo(m.id)} 
-                                style={{ 
-                                  background: deleteConfirmMemoId === m.id ? (isReddish(m.color) ? '#000000' : '#d9534f') : 'none', 
-                                  border: 'none', 
-                                  cursor: 'pointer', 
-                                  fontSize: `${14}px`, 
-                                  color: deleteConfirmMemoId === m.id ? 'white' : textColor, 
-                                  padding: deleteConfirmMemoId === m.id ? '2px 6px' : '0',
-                                  borderRadius: '0px',
-                                  textDecoration: deleteConfirmMemoId === m.id ? 'none' : 'underline',
-                                  fontWeight: deleteConfirmMemoId === m.id ? 'bold' : 'normal',
-                                  transition: 'all 0.2s'
-                                }}
-                              >
-                                {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {isLocked ? (
+                          <span style={{ fontSize: '13px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
+                            {lockedMemos[m.id]} is editing...
+                          </span>
+                        ) : (
+                          <>
+                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'underline', padding: 0 }}>edit</button>
+                            <button 
+                              onClick={() => handleDeleteMemo(m.id)} 
+                              style={{ 
+                                background: deleteConfirmMemoId === m.id ? (isReddish(m.color) ? '#000000' : '#d9534f') : 'none', 
+                                border: 'none', 
+                                cursor: 'pointer', 
+                                fontSize: `${14}px`, 
+                                color: deleteConfirmMemoId === m.id ? 'white' : textColor, 
+                                padding: deleteConfirmMemoId === m.id ? '2px 6px' : '0',
+                                borderRadius: '0px',
+                                textDecoration: deleteConfirmMemoId === m.id ? 'none' : 'underline',
+                                fontWeight: deleteConfirmMemoId === m.id ? 'bold' : 'normal',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
