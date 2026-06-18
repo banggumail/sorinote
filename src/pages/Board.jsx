@@ -821,7 +821,7 @@ export default function Board() {
           <button
             type="submit"
             style={{
-              padding: '0 10px',
+              padding: '3px 8px',
               fontSize: '10px',
               fontWeight: 'normal',
               border: `1px solid ${borderColor}`,
@@ -832,7 +832,9 @@ export default function Board() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: 'inherit'
+              fontFamily: 'inherit',
+              boxSizing: 'border-box',
+              lineHeight: 'normal'
             }}
           >
             enter
