@@ -1029,3 +1029,61 @@ textarea::placeholder {
   box-sizing: border-box;
   cursor: pointer;
 }
+
+/* URL duplicate check warning styles */
+.url-warning-message {
+  color: #ff4d4f;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 10;
+  transition: all 0.3s ease;
+  animation: urlWarningFadeIn 0.3s ease;
+}
+
+@keyframes urlWarningFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Desktop layout: place it to the right of the input */
+@media (min-width: 769px) {
+  .url-warning-container {
+    position: relative;
+  }
+  .url-warning-message {
+    position: absolute;
+    left: calc(100% - 22px);
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+  }
+  @keyframes urlWarningFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50%) translateX(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+  }
+}
+
+/* Mobile layout: place it below the input item */
+@media (max-width: 768px) {
+  .url-warning-message {
+    margin-top: 5px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+

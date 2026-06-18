@@ -260,8 +260,28 @@ const upload = multer({
 app.get('/api/admin/has-password', async (req, res) => {
   try {
     const db = await getDb();
-    const row = await db.get('SELECT value FROM settings WHERE key = ?', 'adminPassword');
-    res.json({ hasPassword: !!(row && row.value) });
+    const pwRow = await db.get('SELECT value FROM settings WHERE key = ?', 'adminPassword');
+    const loginRow = await db.get('SELECT value FROM settings WHERE key = ?', 'requireAdminLogin');
+    res.json({ 
+      hasPassword: !!(pwRow && pwRow.value),
+      requireAdminLogin: loginRow ? loginRow.value === 'true' : false
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Toggle requiring password on entry
+app.post('/api/admin/set-require-login', async (req, res) => {
+  try {
+    const db = await getDb();
+    const { requireAdminLogin } = req.body;
+    await db.run(
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+      'requireAdminLogin',
+      requireAdminLogin ? 'true' : 'false'
+    );
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -301,6 +321,7 @@ app.post('/api/admin/set-password', async (req, res) => {
     
     if (!newPassword || newPassword.trim() === '') {
       await db.run('DELETE FROM settings WHERE key = ?', 'adminPassword');
+      await db.run('DELETE FROM settings WHERE key = ?', 'requireAdminLogin');
     } else {
       await db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', 'adminPassword', newPassword);
     }

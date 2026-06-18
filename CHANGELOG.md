@@ -4,6 +4,22 @@
 
 ---
 
+## v1.8.0 (2026. 06. 18)
+
+### 관리자 설정 개선 및 입력 검증 강화 (Admin Settings & Input Validation)
+1. **비밀번호 등록 및 이중 확인 UI/UX 개선**:
+   * 초기 비밀번호 등록 필드의 플레이스홀더를 `new password`로 변경하고 등록 버튼 텍스트를 `confirm`으로 통일했습니다.
+   * `new password`와 `confirm password` 두 입력 값이 일치하고 공백이 아닐 때만 `confirm` 버튼이 활성화되도록 유효성 검증을 도입했습니다.
+2. **비밀번호 변경 및 삭제 확인 버튼 제어**:
+   * 비밀번호 변경(`change password`) 및 삭제(`remove password`) 시에도 조건(필드값 입력 여부 및 일치 여부)을 충족해야만 `confirm` 버튼이 활성화되도록 제어했습니다.
+   * 버튼이 비활성화 상태일 때는 투명도(`opacity: 0.5`)와 경고 커서(`cursor: not-allowed`)를 적용해 직관적인 피드백을 주도록 디자인을 다듬었습니다.
+3. **삭제 안내 문구 추가**:
+   * 초기 설정 화면의 `confirm` 버튼 아래에 "비밀번호가 설정된 경우 월드 삭제 시 요구합니다. / Password required for world deletion if set." 안내 문구를 상시 노출하도록 조치했습니다.
+4. **설정 팝업 오작동 및 런타임 크래시 방지**:
+   * 세팅 버튼 클릭 시 런타임 참조 에러(ReferenceError)를 일으켜 화면이 전부 사라지던 버그(정의 누락되었던 `handleSaveRequireLogin` 함수)를 수정하고, 상태 보존을 위한 `handleToggleDraftRequireLogin`을 정의하여 안정적으로 작동하도록 보장했습니다.
+
+---
+
 ## v1.7.0 (2026. 06. 18)
 
 ### 주요 기능 추가 및 디자인 개선 (Features & Design UX)

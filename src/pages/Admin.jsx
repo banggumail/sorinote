@@ -23,7 +23,7 @@ function getReadableColor(bgColor, currentColor) {
   const isBgDark = yiqBg < 128;
 
   if (!currentColor) return isBgDark ? '#ffffff' : '#000000';
-  
+
   const hexText = currentColor.replace('#', '');
   const rText = parseInt(hexText.substring(0, 2), 16);
   const gText = parseInt(hexText.substring(2, 4), 16);
@@ -46,11 +46,11 @@ function getComplementaryColor(hexColor) {
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
-  
+
   const compR = 255 - r;
   const compG = 255 - g;
   const compB = 255 - b;
-  
+
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
   if (brightness < 50) {
     return 'rgba(255, 235, 59, 0.6)';
@@ -59,6 +59,26 @@ function getComplementaryColor(hexColor) {
     return 'rgba(0, 0, 0, 0.35)';
   }
   return `rgba(${compR}, ${compG}, ${compB}, 0.45)`;
+}
+
+function getWarningColor(bgColor) {
+  if (!bgColor) return '#ff4d4f';
+  let hex = bgColor.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  if (hex.length !== 6) return '#ff4d4f';
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  const isDark = yiq < 128;
+
+  const isReddish = (r - g > 50) && (r - b > 50);
+  if (isReddish) {
+    return isDark ? '#ffcc00' : '#8b0000';
+  }
+  return isDark ? '#ff6b6b' : '#e53e3e';
 }
 
 export default function Admin() {
@@ -73,6 +93,8 @@ export default function Admin() {
   const [draftSettings, setDraftSettings] = useState(DEFAULT_SETTINGS);
   const [recentPads, setRecentPads] = useState([]);
   const [editingPadId, setEditingPadId] = useState(null);
+
+  const isDuplicateId = padId.trim() !== '' && recentPads.some(pad => pad.id.toLowerCase() === padId.trim().toLowerCase());
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const [isTitleColorCustomized, setIsTitleColorCustomized] = useState(false);
@@ -80,6 +102,8 @@ export default function Admin() {
 
   // Password Protection States
   const [hasPassword, setHasPassword] = useState(false);
+  const [requireAdminLogin, setRequireAdminLogin] = useState(false);
+  const [draftRequireAdminLogin, setDraftRequireAdminLogin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return sessionStorage.getItem('admin_authenticated') === 'true';
   });
@@ -119,6 +143,10 @@ export default function Admin() {
 
   const handleSetPassword = (e) => {
     e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('Passwords do not match.');
+      return;
+    }
     fetch(`${API_BASE}/api/admin/set-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -127,8 +155,22 @@ export default function Admin() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
+          fetch(`${API_BASE}/api/admin/set-require-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requireAdminLogin: draftRequireAdminLogin })
+          })
+            .then(res => res.json())
+            .then(loginData => {
+              if (loginData.success) {
+                setRequireAdminLogin(draftRequireAdminLogin);
+              }
+            })
+            .catch(err => console.error('Error setting require login:', err));
+
           alert('Password successfully set!');
           setNewPassword('');
+          setConfirmPassword('');
           setIsSettingOpen(false);
           setHasPassword(true);
         } else {
@@ -152,6 +194,19 @@ export default function Admin() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
+          fetch(`${API_BASE}/api/admin/set-require-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requireAdminLogin: draftRequireAdminLogin })
+          })
+            .then(res => res.json())
+            .then(loginData => {
+              if (loginData.success) {
+                setRequireAdminLogin(draftRequireAdminLogin);
+              }
+            })
+            .catch(err => console.error('Error saving require login in change:', err));
+
           alert('Password successfully changed!');
           setCurrentPassword('');
           setNewPassword('');
@@ -160,6 +215,7 @@ export default function Admin() {
           setSettingsMode('menu');
           if (!newPassword || newPassword.trim() === '') {
             setHasPassword(false);
+            setRequireAdminLogin(false);
             sessionStorage.removeItem('admin_authenticated');
             setIsAuthenticated(false);
           }
@@ -191,6 +247,7 @@ export default function Admin() {
           setIsSettingOpen(false);
           setSettingsMode('menu');
           setHasPassword(false);
+          setRequireAdminLogin(false);
           sessionStorage.removeItem('admin_authenticated');
           setIsAuthenticated(false);
         } else {
@@ -198,6 +255,31 @@ export default function Admin() {
         }
       })
       .catch(err => console.error('Error removing password:', err));
+  };
+
+  const handleToggleDraftRequireLogin = (e) => {
+    setDraftRequireAdminLogin(e.target.checked);
+  };
+
+  const handleSaveRequireLogin = () => {
+    fetch(`${API_BASE}/api/admin/set-require-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requireAdminLogin: draftRequireAdminLogin })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setRequireAdminLogin(draftRequireAdminLogin);
+          alert('설정이 저장되었습니다.');
+        } else {
+          alert('설정 저장에 실패했습니다.');
+        }
+      })
+      .catch(err => {
+        console.error('Error saving require login:', err);
+        alert('설정 저장 중 오류가 발생했습니다.');
+      });
   };
 
 
@@ -246,6 +328,7 @@ export default function Admin() {
       .then(res => res.json())
       .then(data => {
         setHasPassword(data.hasPassword);
+        setRequireAdminLogin(data.requireAdminLogin || false);
       })
       .catch(err => console.error('Error checking password status:', err));
   }, []);
@@ -258,7 +341,7 @@ export default function Admin() {
   const updateDraftSetting = (key, value) => {
     setDraftSettings(prev => {
       let updated = { ...prev, [key]: value };
-      
+
       // Only adjust titleColor and descColor when the background color changes AND they are not manually customized
       if (key === 'bgColor') {
         if (!isTitleColorCustomized) {
@@ -268,7 +351,7 @@ export default function Admin() {
           updated.descColor = getReadableColor(value, updated.descColor);
         }
       }
-      
+
       return updated;
     });
 
@@ -346,9 +429,13 @@ export default function Admin() {
 
   const handleCreatePad = (e) => {
     e.preventDefault();
-    if (padId.trim() !== '' && padTitle.trim() !== '') {
-      const id = padId.trim();
-      const title = padTitle.trim();
+    const id = padId.trim();
+    const title = padTitle.trim();
+    if (id !== '' && title !== '') {
+      const isDuplicate = recentPads.some(pad => pad.id.toLowerCase() === id.toLowerCase());
+      if (isDuplicate) {
+        return;
+      }
       const date = new Date();
       const formattedDate = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
       const newPad = { id, title, date: formattedDate, canvasBgColor: initCanvasBg, outerBgColor: initOuterBg, titleColor: initTitleColor, isPrivate: isPrivate ? 1 : 0 };
@@ -389,8 +476,8 @@ export default function Admin() {
   };
 
   const handleDeleteWorld = (id) => {
-    if (deleteConfirmId === id) {
-      console.log('Second click. Sending DELETE request for:', id);
+    const performDelete = () => {
+      console.log('Sending DELETE request for:', id);
       fetch(`${API_BASE}/api/pads/${id}`, {
         method: 'DELETE'
       })
@@ -401,6 +488,33 @@ export default function Admin() {
           loadPads();
         })
         .catch(err => console.error('Error deleting pad:', err));
+    };
+
+    if (deleteConfirmId === id) {
+      if (hasPassword) {
+        const password = window.prompt("삭제하려면 관리자 비밀번호를 입력하세요.\nEnter the admin password to delete:");
+        if (password === null) return; // User canceled
+
+        fetch(`${API_BASE}/api/admin/verify-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              performDelete();
+            } else {
+              alert('비밀번호가 올바르지 않습니다. / Incorrect password.');
+            }
+          })
+          .catch(err => {
+            console.error('Error verifying password:', err);
+            alert('비밀번호 확인 중 오류가 발생했습니다.');
+          });
+      } else {
+        performDelete();
+      }
     } else {
       console.log('First click. Setting delete confirmation for:', id);
       setDeleteConfirmId(id);
@@ -411,7 +525,11 @@ export default function Admin() {
     }
   };
 
-  if (hasPassword && !isAuthenticated) {
+  const isSetPasswordFormValid = newPassword.trim() !== '' && newPassword === confirmPassword;
+  const isChangePasswordFormValid = currentPassword.trim() !== '' && newPassword.trim() !== '' && newPassword === confirmPassword;
+  const isRemovePasswordFormValid = currentPassword.trim() !== '';
+
+  if (hasPassword && requireAdminLogin && !isAuthenticated) {
     return (
       <div className="app-container" style={{ background: settings.adminBgColor, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <div style={{
@@ -430,11 +548,11 @@ export default function Admin() {
           <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Admin Login</h2>
           {loginError && <p style={{ color: '#ff4d4f', fontSize: '13px', margin: 0 }}>{loginError}</p>}
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-            <input 
-              type="password" 
-              placeholder="password" 
-              value={loginPassword} 
-              onChange={e => setLoginPassword(e.target.value)} 
+            <input
+              type="password"
+              placeholder="password"
+              value={loginPassword}
+              onChange={e => setLoginPassword(e.target.value)}
               required
               autoFocus
               style={{ padding: '8px', fontSize: '14px', border: '1px solid #ccc', background: 'transparent', color: 'inherit', fontFamily: 'inherit' }}
@@ -465,9 +583,9 @@ export default function Admin() {
                 <span>db: {formatBytes(storageSize.dbSize)}</span>
                 <span>/</span>
                 <span>uploads: {formatBytes(storageSize.uploadsSize)}</span>
-                <button 
-                  type="button" 
-                  onClick={loadStorageSize} 
+                <button
+                  type="button"
+                  onClick={loadStorageSize}
                   className="admin-btn"
                   style={{ padding: '0 4px', fontSize: '10px', height: '18px', display: 'inline-flex', alignItems: 'center', marginLeft: '4px' }}
                 >
@@ -478,20 +596,20 @@ export default function Admin() {
             <div className="admin-header-pickers" style={{ flexWrap: 'wrap', gap: '15px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold', color: adminTextColor }}>admin_bg:</span>
-                <input 
-                  type="color" 
-                  value={draftSettings.adminBgColor} 
-                  onChange={(e) => updateDraftSetting('adminBgColor', e.target.value)} 
-                  style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
+                <input
+                  type="color"
+                  value={draftSettings.adminBgColor}
+                  onChange={(e) => updateDraftSetting('adminBgColor', e.target.value)}
+                  style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '14px', fontWeight: 'bold', color: adminTextColor }}>admin_font_color:</span>
-                <input 
-                  type="color" 
-                  value={draftSettings.adminFontColor || '#ffffff'} 
-                  onChange={(e) => updateDraftSetting('adminFontColor', e.target.value)} 
-                  style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
+                <input
+                  type="color"
+                  value={draftSettings.adminFontColor || '#ffffff'}
+                  onChange={(e) => updateDraftSetting('adminFontColor', e.target.value)}
+                  style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }}
                 />
               </div>
               <button
@@ -506,14 +624,15 @@ export default function Admin() {
 
           {/* Settings Menu Trigger and Popover */}
           <div className="admin-header-settings">
-            <button 
+            <button
               onClick={() => {
                 setIsSettingOpen(!isSettingOpen);
                 setSettingsMode('menu');
                 setCurrentPassword('');
                 setNewPassword('');
                 setConfirmPassword('');
-              }} 
+                setDraftRequireAdminLogin(requireAdminLogin);
+              }}
               className="admin-btn"
               style={{ padding: '4px 10px', fontSize: '14px' }}
             >
@@ -524,7 +643,7 @@ export default function Admin() {
                 position: 'absolute',
                 right: 0,
                 top: '40px',
-                width: '260px',
+                width: '300px',
                 background: draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff',
                 border: '1px solid rgba(128,128,128,0.3)',
                 padding: '15px',
@@ -539,22 +658,74 @@ export default function Admin() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {settingsMode === 'menu' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <button 
-                          type="button" 
-                          onClick={() => setSettingsMode('change')} 
-                          className="admin-btn" 
+                        <label style={{
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          marginBottom: '0px',
+                          color: getReadableColor(draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff', '#000000')
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={draftRequireAdminLogin}
+                            onChange={handleToggleDraftRequireLogin}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          Admin door lock
+                        </label>
+
+                        <div style={{
+                          fontSize: '11px',
+                          lineHeight: '1.3',
+                          opacity: 0.8,
+                          color: getReadableColor(draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff', '#000000'),
+                          marginTop: '-3px',
+                          marginBottom: '8px',
+                          padding: '0 20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '1px'
+                        }}>
+                          <div style={{ whiteSpace: 'nowrap' }}>활성화 시 관리자 페이지 접근 비밀번호를 요구합니다.</div>
+                          <div style={{ fontStyle: 'italic', fontSize: '10px', opacity: 0.9, lineHeight: '1.2' }}>
+                            Require password for admin page<br />access when enabled.
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleSaveRequireLogin}
+                          disabled={draftRequireAdminLogin === requireAdminLogin}
+                          className="admin-btn"
+                          style={{
+                            width: '100%',
+                            padding: '6px',
+                            opacity: draftRequireAdminLogin === requireAdminLogin ? 0.5 : 1,
+                            cursor: draftRequireAdminLogin === requireAdminLogin ? 'not-allowed' : 'pointer',
+                            marginBottom: '10px'
+                          }}
+                        >
+                          save setting
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSettingsMode('change')}
+                          className="admin-btn"
                           style={{ width: '100%', padding: '6px' }}
                         >
                           change password
                         </button>
-                        <button 
-                          type="button" 
-                          onClick={() => setSettingsMode('remove')} 
-                          className="admin-btn" 
-                          style={{ 
-                            width: '100%', 
-                            padding: '6px', 
-                            color: '#ff4d4f', 
+                        <button
+                          type="button"
+                          onClick={() => setSettingsMode('remove')}
+                          className="admin-btn"
+                          style={{
+                            width: '100%',
+                            padding: '6px',
+                            color: '#ff4d4f',
                             borderColor: '#ff4d4f',
                             backgroundColor: 'transparent'
                           }}
@@ -566,35 +737,82 @@ export default function Admin() {
 
                     {settingsMode === 'change' && (
                       <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <input 
-                          type="password" 
-                          placeholder="current password" 
-                          value={currentPassword} 
-                          onChange={e => setCurrentPassword(e.target.value)} 
+                        <input
+                          type="password"
+                          placeholder="current password"
+                          value={currentPassword}
+                          onChange={e => setCurrentPassword(e.target.value)}
                           required
                           style={{ padding: '6px', fontSize: '13px', border: '1px solid #ccc', background: 'transparent', color: 'inherit' }}
                         />
-                        <input 
-                          type="password" 
-                          placeholder="new password" 
-                          value={newPassword} 
-                          onChange={e => setNewPassword(e.target.value)} 
+                        <input
+                          type="password"
+                          placeholder="new password"
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
                           required
                           style={{ padding: '6px', fontSize: '13px', border: '1px solid #ccc', background: 'transparent', color: 'inherit' }}
                         />
-                        <input 
-                          type="password" 
-                          placeholder="confirm new password" 
-                          value={confirmPassword} 
-                          onChange={e => setConfirmPassword(e.target.value)} 
+                        <input
+                          type="password"
+                          placeholder="confirm new password"
+                          value={confirmPassword}
+                          onChange={e => setConfirmPassword(e.target.value)}
                           required
                           style={{ padding: '6px', fontSize: '13px', border: '1px solid #ccc', background: 'transparent', color: 'inherit' }}
                         />
+                        <label style={{
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          margin: '0px',
+                          color: getReadableColor(draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff', '#000000')
+                        }}>
+                          <input
+                            type="checkbox"
+                            checked={draftRequireAdminLogin}
+                            onChange={handleToggleDraftRequireLogin}
+                            style={{ cursor: 'pointer' }}
+                          />
+                          Admin door lock
+                        </label>
+
+                        <div style={{
+                          fontSize: '11px',
+                          lineHeight: '1.3',
+                          opacity: 0.8,
+                          color: getReadableColor(draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff', '#000000'),
+                          marginTop: '-3px',
+                          marginBottom: '8px',
+                          padding: '0 20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '1px'
+                        }}>
+                          <div style={{ whiteSpace: 'nowrap' }}>활성화 시 관리자 페이지 접근 비밀번호를 요구합니다.</div>
+                          <div style={{ fontStyle: 'italic', fontSize: '10px', opacity: 0.9, lineHeight: '1.2' }}>
+                            Require password for admin page<br />access when enabled.
+                          </div>
+                        </div>
+
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button type="button" onClick={() => { setSettingsMode('menu'); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }} className="admin-btn" style={{ flex: 1, padding: '6px' }}>
                             back
                           </button>
-                          <button type="submit" className="admin-btn" style={{ flex: 1, padding: '6px', fontWeight: 'bold' }}>
+                          <button 
+                            type="submit" 
+                            className="admin-btn" 
+                            disabled={!isChangePasswordFormValid}
+                            style={{ 
+                              flex: 1, 
+                              padding: '6px', 
+                              fontWeight: 'bold',
+                              opacity: isChangePasswordFormValid ? 1 : 0.5,
+                              cursor: isChangePasswordFormValid ? 'pointer' : 'not-allowed'
+                            }}
+                          >
                             confirm
                           </button>
                         </div>
@@ -603,11 +821,11 @@ export default function Admin() {
 
                     {settingsMode === 'remove' && (
                       <form onSubmit={handleRemovePassword} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <input 
-                          type="password" 
-                          placeholder="current password" 
-                          value={currentPassword} 
-                          onChange={e => setCurrentPassword(e.target.value)} 
+                        <input
+                          type="password"
+                          placeholder="current password"
+                          value={currentPassword}
+                          onChange={e => setCurrentPassword(e.target.value)}
                           required
                           style={{ padding: '6px', fontSize: '13px', border: '1px solid #ccc', background: 'transparent', color: 'inherit' }}
                         />
@@ -615,16 +833,19 @@ export default function Admin() {
                           <button type="button" onClick={() => { setSettingsMode('menu'); setCurrentPassword(''); }} className="admin-btn" style={{ flex: 1, padding: '6px' }}>
                             back
                           </button>
-                          <button 
-                            type="submit" 
-                            className="admin-btn" 
-                            style={{ 
-                              flex: 1, 
-                              padding: '6px', 
+                          <button
+                            type="submit"
+                            className="admin-btn"
+                            disabled={!isRemovePasswordFormValid}
+                            style={{
+                              flex: 1,
+                              padding: '6px',
                               fontWeight: 'bold',
-                              color: '#ff4d4f', 
-                              borderColor: '#ff4d4f',
-                              backgroundColor: 'transparent'
+                              color: isRemovePasswordFormValid ? '#ff4d4f' : 'rgba(255, 77, 79, 0.5)',
+                              borderColor: isRemovePasswordFormValid ? '#ff4d4f' : 'rgba(255, 77, 79, 0.3)',
+                              backgroundColor: 'transparent',
+                              opacity: isRemovePasswordFormValid ? 1 : 0.5,
+                              cursor: isRemovePasswordFormValid ? 'pointer' : 'not-allowed'
                             }}
                           >
                             confirm
@@ -635,17 +856,88 @@ export default function Admin() {
                   </div>
                 ) : (
                   <form onSubmit={handleSetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <input 
-                      type="password" 
-                      placeholder="set password" 
-                      value={newPassword} 
-                      onChange={e => setNewPassword(e.target.value)} 
+                    <input
+                      type="password"
+                      placeholder="new password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
                       required
                       style={{ padding: '6px', fontSize: '13px', border: '1px solid #ccc', background: 'transparent', color: 'inherit' }}
                     />
-                    <button type="submit" className="admin-btn" style={{ width: '100%', padding: '6px' }}>
-                      set password
+                    <input
+                      type="password"
+                      placeholder="confirm password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      required
+                      style={{ padding: '6px', fontSize: '13px', border: '1px solid #ccc', background: 'transparent', color: 'inherit' }}
+                    />
+                    <label style={{
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      margin: '0px',
+                      color: getReadableColor(draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff', '#000000')
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={draftRequireAdminLogin}
+                        onChange={handleToggleDraftRequireLogin}
+                        style={{ cursor: 'pointer' }}
+                      />
+                      Admin door lock
+                    </label>
+
+                    <div style={{
+                      fontSize: '11px',
+                      lineHeight: '1.3',
+                      opacity: 0.8,
+                      color: getReadableColor(draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff', '#000000'),
+                      marginTop: '-3px',
+                      marginBottom: '8px',
+                      padding: '0 20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1px'
+                    }}>
+                      <div style={{ whiteSpace: 'nowrap' }}>활성화 시 관리자 페이지 접근 비밀번호를 요구합니다.</div>
+                      <div style={{ fontStyle: 'italic', fontSize: '10px', opacity: 0.9, lineHeight: '1.2' }}>
+                        Require password for admin page<br />access when enabled.
+                      </div>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="admin-btn" 
+                      disabled={!isSetPasswordFormValid}
+                      style={{ 
+                        width: '100%', 
+                        padding: '6px',
+                        opacity: isSetPasswordFormValid ? 1 : 0.5,
+                        cursor: isSetPasswordFormValid ? 'pointer' : 'not-allowed'
+                      }}
+                    >
+                      confirm
                     </button>
+
+                    <div style={{
+                      fontSize: '11px',
+                      lineHeight: '1.3',
+                      opacity: 0.8,
+                      color: getReadableColor(draftSettings.bgColor === '#000000' ? '#1a1a1a' : '#ffffff', '#000000'),
+                      marginTop: '8px',
+                      padding: '0 5px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1px'
+                    }}>
+                      <div>비밀번호가 설정된 경우 월드 삭제 시 요구합니다.</div>
+                      <div style={{ fontStyle: 'italic', fontSize: '10px', opacity: 0.9, lineHeight: '1.2' }}>
+                        Password required for world deletion if set.
+                      </div>
+                    </div>
                   </form>
                 )}
               </div>
@@ -655,272 +947,431 @@ export default function Admin() {
 
         {/* Main Page Preview WYSIWYG Card */}
         <div className="admin-settings-card admin-page-settings-card" style={{ background: draftSettings.bgColor }}>
-        {/* Main bg color picker above title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: getReadableColor(draftSettings.bgColor, '#000000') }}>main_bg:</span>
-          <input 
-            type="color" 
-            value={draftSettings.bgColor} 
-            onChange={(e) => updateDraftSetting('bgColor', e.target.value)} 
-            style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} 
-          />
-        </div>
+          {/* Main bg color picker above title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 'bold', color: getReadableColor(draftSettings.bgColor, '#000000') }}>main_bg:</span>
+            <input
+              type="color"
+              value={draftSettings.bgColor}
+              onChange={(e) => updateDraftSetting('bgColor', e.target.value)}
+              style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }}
+            />
+          </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', margin: '0 0 15px 0' }}>
-          <input
-            value={draftSettings.titleText}
-            onChange={(e) => updateDraftSetting('titleText', e.target.value)}
-            style={{
-              fontSize: 'clamp(1.6rem, 5vw, 2.5rem)', margin: 0, padding: 0, border: '1px dashed rgba(128,128,128,0.3)',
-              background: 'transparent', color: draftSettings.titleColor, fontWeight: 'bold', outline: 'none',
-              width: '100%', fontFamily: 'inherit'
-            }}
-          />
-          <input 
-            type="color" 
-            value={draftSettings.titleColor} 
-            onChange={(e) => updateDraftSetting('titleColor', e.target.value)} 
-            style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, background: 'transparent', marginTop: '6px' }} 
-            title="타이틀 색상" 
-          />
-        </div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', margin: '0 0 15px 0' }}>
+            <input
+              value={draftSettings.titleText}
+              onChange={(e) => updateDraftSetting('titleText', e.target.value)}
+              style={{
+                fontSize: 'clamp(1.6rem, 5vw, 2.5rem)', margin: 0, padding: 0, border: '1px dashed rgba(128,128,128,0.3)',
+                background: 'transparent', color: draftSettings.titleColor, fontWeight: 'bold', outline: 'none',
+                width: '100%', fontFamily: 'inherit'
+              }}
+            />
+            <input
+              type="color"
+              value={draftSettings.titleColor}
+              onChange={(e) => updateDraftSetting('titleColor', e.target.value)}
+              style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, background: 'transparent', marginTop: '6px' }}
+              title="타이틀 색상"
+            />
+          </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', margin: '0' }}>
-          <textarea
-            value={draftSettings.descText}
-            onChange={(e) => updateDraftSetting('descText', e.target.value)}
-            style={{
-              margin: 0, padding: 0, color: draftSettings.descColor, fontSize: 'clamp(1rem, 3.5vw, 1.2rem)', lineHeight: '1.6',
-              border: '1px dashed rgba(128,128,128,0.3)', background: 'transparent', outline: 'none',
-              width: '100%', minHeight: '80px', resize: 'vertical', fontFamily: 'inherit', whiteSpace: 'pre-wrap'
-            }}
-          />
-          <input 
-            type="color" 
-            value={draftSettings.descColor} 
-            onChange={(e) => updateDraftSetting('descColor', e.target.value)} 
-            style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, background: 'transparent', marginTop: '2px' }} 
-            title="설명 색상" 
-          />
-        </div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', margin: '0' }}>
+            <textarea
+              value={draftSettings.descText}
+              onChange={(e) => updateDraftSetting('descText', e.target.value)}
+              style={{
+                margin: 0, padding: 0, color: draftSettings.descColor, fontSize: 'clamp(1rem, 3.5vw, 1.2rem)', lineHeight: '1.6',
+                border: '1px dashed rgba(128,128,128,0.3)', background: 'transparent', outline: 'none',
+                width: '100%', minHeight: '80px', resize: 'vertical', fontFamily: 'inherit', whiteSpace: 'pre-wrap'
+              }}
+            />
+            <input
+              type="color"
+              value={draftSettings.descColor}
+              onChange={(e) => updateDraftSetting('descColor', e.target.value)}
+              style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, background: 'transparent', marginTop: '2px' }}
+              title="설명 색상"
+            />
+          </div>
 
-        {/* Description Image Upload in Admin WYSIWYG */}
-        <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {draftSettings.descImage ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: 'fit-content' }}>
-              <div style={{ padding: 0 }}>
-                <img 
-                  src={`${API_BASE}${draftSettings.descImage}`} 
-                  alt="Description Preview" 
-                  style={{ maxHeight: '150px', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
-                />
+          {/* Description Image Upload in Admin WYSIWYG */}
+          <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {draftSettings.descImage ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: 'fit-content' }}>
+                <div style={{ padding: 0 }}>
+                  <img
+                    src={`${API_BASE}${draftSettings.descImage}`}
+                    alt="Description Preview"
+                    style={{ maxHeight: '150px', maxWidth: '100%', objectFit: 'contain', display: 'block' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => updateDraftSetting('descImage', '')}
+                    className="admin-btn"
+                    style={{
+                      color: '#ff4d4f',
+                      borderColor: '#ff4d4f',
+                      backgroundColor: 'transparent',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    delete
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button"
-                  onClick={() => updateDraftSetting('descImage', '')}
+            ) : (
+              <div className="admin-upload-image-wrapper">
+                <label
                   className="admin-btn"
                   style={{
-                    color: '#ff4d4f',
-                    borderColor: '#ff4d4f',
-                    backgroundColor: 'transparent',
-                    padding: '2px 8px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    padding: '6px 12px'
                   }}
                 >
-                  delete
-                </button>
+                  upload image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadDescImage}
+                    style={{ display: 'none' }}
+                  />
+                </label>
               </div>
-            </div>
-          ) : (
-            <div className="admin-upload-image-wrapper">
-              <label 
-                className="admin-btn" 
-                style={{ 
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  padding: '6px 12px'
-                }}
-              >
-                upload image
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleUploadDescImage}
-                  style={{ display: 'none' }}
-                />
-              </label>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Save Button */}
-      <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button 
-          onClick={handleSaveSettings}
-          className="admin-btn"
-        >
-          save
-        </button>
-      </div>
+        {/* Save Button */}
+        <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={handleSaveSettings}
+            className="admin-btn"
+          >
+            save
+          </button>
+        </div>
 
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(128,128,128,0.3)', margin: '40px 0' }} />
+        <hr style={{ border: 'none', borderTop: '1px solid rgba(128,128,128,0.3)', margin: '40px 0' }} />
 
-      {/* Create World Section */}
-      <h2 style={{ fontSize: '1.5rem', margin: '0 0 20px 0', color: adminTextColor }}>Create world</h2>
-      
-      <div className="create-world-container">
-        <form onSubmit={handleCreatePad} className="create-world-form">
-          <div className="create-world-inputs-col">
-            {/* URL Input matching width of World Name Input */}
-            <div className="create-world-input-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="url"
-                value={padId}
-                onChange={(e) => setPadId(e.target.value)}
-                style={{ padding: '8px', fontSize: '16px', border: '1px solid #ccc', fontFamily: 'inherit', flex: 1 }}
-              />
-              <div style={{ width: '32px', height: '32px', flexShrink: 0 }} /> {/* spacer matching the color picker */}
-            </div>
+        {/* Create World Section */}
+        <h2 style={{ fontSize: '1.5rem', margin: '0 0 20px 0', color: adminTextColor }}>Create world</h2>
 
-            {/* World Name Input */}
-            <div className="create-world-input-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="world name"
-                value={padTitle}
-                onChange={(e) => setPadTitle(e.target.value)}
-                style={{ padding: '8px', fontSize: '16px', border: '1px solid #ccc', fontFamily: 'inherit', flex: 1 }}
-              />
-              <input type="color" value={initTitleColor} onChange={e => setInitTitleColor(e.target.value)} style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} title="세계 제목 색상 선택" />
-            </div>
+        <div className="create-world-container">
+          <form onSubmit={handleCreatePad} className="create-world-form">
+            <div className="create-world-inputs-col">
+              {/* URL Input matching width of World Name Input */}
+              <div className="url-warning-container" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                <div className="create-world-input-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="url"
+                    value={padId}
+                    onChange={(e) => setPadId(e.target.value)}
+                    style={{
+                      padding: '8px',
+                      fontSize: '16px',
+                      border: isDuplicateId ? '1px solid #ff4d4f' : '1px solid #ccc',
+                      fontFamily: 'inherit',
+                      flex: 1,
+                      backgroundColor: isDuplicateId ? '#fff1f0' : '#ffffff',
+                      color: isDuplicateId ? '#ff4d4f' : '#000000',
+                      transition: 'all 0.3s ease'
+                    }}
+                  />
+                  <div style={{ width: '32px', height: '32px', flexShrink: 0 }} /> {/* spacer matching the color picker */}
+                </div>
+                {isDuplicateId && (
+                  <div className="url-warning-message" style={{ color: getWarningColor(draftSettings.adminBgColor) }}>
+                    <div>사용 중인 주소입니다.</div>
+                    <div style={{ fontSize: '11px', fontWeight: 'normal', opacity: 0.8 }}>
+                      This address is already in use.
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            {/* Color Pickers (world_bg, canvas_bg) */}
-            <div className="create-world-pickers-row" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <label style={{ fontSize: '14px', color: adminTextColor, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                world_bg:
-                <input type="color" value={initOuterBg} onChange={e => setInitOuterBg(e.target.value)} style={{ width: '32px', height: '32px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} title="전체 배경색 선택" />
-              </label>
-              <label style={{ fontSize: '14px', color: adminTextColor, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                canvas_bg:
-                <input type="color" value={initCanvasBg} onChange={e => setInitCanvasBg(e.target.value)} style={{ width: '32px', height: '32px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} title="캔버스 색상 선택" />
-              </label>
-            </div>
-
-            {/* Private Checkbox */}
-            <div className="create-world-private-row" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <label style={{ fontSize: '14px', color: adminTextColor, display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={isPrivate} 
-                  onChange={(e) => setIsPrivate(e.target.checked)} 
-                  style={{ cursor: 'pointer' }}
+              {/* World Name Input */}
+              <div className="create-world-input-item" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="world name"
+                  value={padTitle}
+                  onChange={(e) => setPadTitle(e.target.value)}
+                  style={{ padding: '8px', fontSize: '16px', border: '1px solid #ccc', fontFamily: 'inherit', flex: 1 }}
                 />
-                private
-              </label>
-            </div>
+                <input type="color" value={initTitleColor} onChange={e => setInitTitleColor(e.target.value)} style={{ width: '32px', height: '32px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} title="세계 제목 색상 선택" />
+              </div>
 
-            {/* Create Button aligned and customized */}
-            <div className="admin-create-btn-wrapper">
-              <button 
-                type="submit" 
-                className="admin-btn"
-              >
-                create
-              </button>
-              <div className="admin-create-btn-spacer" />
-            </div>
-          </div>
+              {/* Color Pickers (world_bg, canvas_bg) */}
+              <div className="create-world-pickers-row" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: adminTextColor, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  world_bg:
+                  <input type="color" value={initOuterBg} onChange={e => setInitOuterBg(e.target.value)} style={{ width: '32px', height: '32px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} title="전체 배경색 선택" />
+                </label>
+                <label style={{ fontSize: '14px', color: adminTextColor, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  canvas_bg:
+                  <input type="color" value={initCanvasBg} onChange={e => setInitCanvasBg(e.target.value)} style={{ width: '32px', height: '32px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} title="캔버스 색상 선택" />
+                </label>
+              </div>
 
-          <div className="create-world-mockup-col">
-            {/* Mockup preview of the pad to be created */}
-            <div 
-              className="create-world-mockup"
-              style={{ background: initOuterBg }}
-              title="생성될 패드 모형 예시"
-            >
-              {/* Canvas block inside pad */}
-              <div style={{ 
-                width: '100%', 
-                height: '100%', 
-                background: initCanvasBg, 
-                border: '1px solid rgba(0,0,0,0.1)', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'center',
-                alignItems: 'flex-start',
-                padding: '15px',
-                boxSizing: 'border-box',
-                transition: 'background 0.3s'
-              }}>
-                {/* Dynamic URL Preview above the title */}
-                <span style={{ 
-                  fontSize: '0.9rem', 
-                  color: getReadableColor(initCanvasBg, '#000000'), 
-                  marginBottom: '10px',
-                  opacity: 0.8,
-                  wordBreak: 'break-all',
-                  textAlign: 'left'
-                }}>
-                  {window.location.origin}/{padId.trim() || 'url'}
-                </span>
-                <span style={{ 
-                  background: getComplementaryColor(initTitleColor || '#0056b3'),
-                  color: initTitleColor || '#0056b3',
-                  padding: '2px 8px',
-                  fontWeight: 'bold',
-                  fontSize: '1.4rem',
-                  borderRadius: '0px',
-                  display: 'inline-block',
-                  textAlign: 'left',
-                  wordBreak: 'break-all',
-                  transition: 'all 0.3s'
-                }}>
-                  {padTitle.trim() || 'world name'}
-                </span>
+              {/* Private Checkbox */}
+              <div className="create-world-private-row" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <label style={{ fontSize: '14px', color: adminTextColor, display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  private
+                </label>
+              </div>
+
+              {/* Create Button aligned and customized */}
+              <div className="admin-create-btn-wrapper">
+                <button
+                  type="submit"
+                  className="admin-btn"
+                  disabled={isDuplicateId}
+                  style={{
+                    opacity: isDuplicateId ? 0.5 : 1,
+                    cursor: isDuplicateId ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  create
+                </button>
+                <div className="admin-create-btn-spacer" />
               </div>
             </div>
-          </div>
-        </form>
-      </div>
 
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(128,128,128,0.3)', margin: '40px 0' }} />
+            <div className="create-world-mockup-col">
+              {/* Mockup preview of the pad to be created */}
+              <div
+                className="create-world-mockup"
+                style={{ background: initOuterBg }}
+                title="생성될 패드 모형 예시"
+              >
+                {/* Canvas block inside pad */}
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  background: initCanvasBg,
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                  padding: '15px',
+                  boxSizing: 'border-box',
+                  transition: 'background 0.3s'
+                }}>
+                  {/* Dynamic URL Preview above the title */}
+                  <span style={{
+                    fontSize: '0.9rem',
+                    color: getReadableColor(initCanvasBg, '#000000'),
+                    marginBottom: '10px',
+                    opacity: 0.8,
+                    wordBreak: 'break-all',
+                    textAlign: 'left'
+                  }}>
+                    {window.location.origin}/{padId.trim() || 'url'}
+                  </span>
+                  <span style={{
+                    background: getComplementaryColor(initTitleColor || '#0056b3'),
+                    color: initTitleColor || '#0056b3',
+                    padding: '2px 8px',
+                    fontWeight: 'bold',
+                    fontSize: '1.4rem',
+                    borderRadius: '0px',
+                    display: 'inline-block',
+                    textAlign: 'left',
+                    wordBreak: 'break-all',
+                    transition: 'all 0.3s'
+                  }}>
+                    {padTitle.trim() || 'world name'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
 
-      <h2 style={{ fontSize: '1.5rem', margin: '0 0 20px 0', color: adminTextColor }}>World list</h2>
-      {recentPads.length === 0 ? (
-        <p style={{ color: adminTextColor, opacity: 0.8, fontSize: '1.1rem' }}>n/a</p>
-      ) : (
-        <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-          {recentPads.map(pad => (
-            <li key={pad.id} className="pad-list-item">
-              {/* Desktop Layout */}
-              <div className="admin-pad-row desktop-only" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', width: '100%' }}>
-                {/* Date Column */}
-                <span className="pad-date" style={{ color: adminTextColor, flexShrink: 0, marginTop: '4px' }}>{pad.date}</span>
+        <hr style={{ border: 'none', borderTop: '1px solid rgba(128,128,128,0.3)', margin: '40px 0' }} />
 
-                {/* Info Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', flex: 1 }}>
-                  {/* Title and Private Badge */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <h2 style={{ fontSize: '1.5rem', margin: '0 0 20px 0', color: adminTextColor }}>World list</h2>
+        {recentPads.length === 0 ? (
+          <p style={{ color: adminTextColor, opacity: 0.8, fontSize: '1.1rem' }}>n/a</p>
+        ) : (
+          <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
+            {recentPads.map(pad => (
+              <li key={pad.id} className="pad-list-item">
+                {/* Desktop Layout */}
+                <div className="admin-pad-row desktop-only" style={{ display: 'flex', alignItems: 'flex-start', gap: '15px', width: '100%' }}>
+                  {/* Date Column */}
+                  <span className="pad-date" style={{ color: adminTextColor, flexShrink: 0, marginTop: '4px' }}>{pad.date}</span>
+
+                  {/* Info Column */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', flex: 1 }}>
+                    {/* Title and Private Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => navigate(`/${pad.id}`)}
+                        className="pad-title-btn"
+                        style={{
+                          background: getComplementaryColor(pad.titleColor || '#0056b3'),
+                          color: pad.titleColor || '#0056b3',
+                          width: 'fit-content'
+                        }}
+                      >
+                        {pad.title}
+                      </button>
+                      {pad.isPrivate === 1 ? (
+                        <span style={{
+                          fontSize: '11px',
+                          color: '#ff4d4f',
+                          border: '1px solid #ff4d4f',
+                          padding: '1px 5px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          private
+                        </span>
+                      ) : (
+                        <span style={{
+                          fontSize: '11px',
+                          color: '#2ea44f',
+                          border: '1px solid #2ea44f',
+                          padding: '1px 5px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}>
+                          public
+                        </span>
+                      )}
+                    </div>
+
+                    {/* URL */}
+                    <span className="pad-url" style={{ color: adminTextColor, paddingLeft: '8px' }}>
+                      {window.location.origin}/{pad.id}
+                    </span>
+
+                    {/* Stats */}
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', paddingLeft: '8px' }}>
+                      <span>note {pad.memoCount || 0}</span>
+                      <span>·</span>
+                      <span>sound {pad.soundCount || 0}</span>
+                      <span>·</span>
+                      <span>scene {pad.sceneCount || 0}</span>
+                    </div>
+
+                    {/* Edit panel */}
+                    {editingPadId === pad.id && (
+                      <div className="admin-edit-panel" style={{ marginTop: '8px' }}>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                          name
+                          <input
+                            type="text"
+                            value={pad.title}
+                            onChange={e => {
+                              const newPads = [...recentPads];
+                              const idx = newPads.findIndex(p => p.id === pad.id);
+                              newPads[idx].title = e.target.value;
+                              setRecentPads(newPads);
+                            }}
+                            style={{ padding: '2px 4px', fontSize: '12px', border: '1px solid #ccc', background: 'transparent', color: adminTextColor, width: '100px', fontFamily: 'inherit' }}
+                          />
+                        </label>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                          title_color <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].titleColor = e.target.value;
+                            setRecentPads(newPads);
+                          }} style={{ width: '18px', height: '18px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} />
+                        </label>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                          canvas <input type="color" value={pad.canvasBgColor || '#FDFBF7'} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].canvasBgColor = e.target.value;
+                            setRecentPads(newPads);
+                          }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
+                        </label>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                          background <input type="color" value={pad.outerBgColor || '#E0E0D0'} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].outerBgColor = e.target.value;
+                            setRecentPads(newPads);
+                          }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
+                        </label>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
+                          private <input type="checkbox" checked={pad.isPrivate === 1} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].isPrivate = e.target.checked ? 1 : 0;
+                            setRecentPads(newPads);
+                          }} style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
+                        </label>
+                        <button onClick={() => {
+                          handleUpdateWorld(pad.id, pad.title, pad.canvasBgColor || '#FDFBF7', pad.outerBgColor || '#E0E0D0', pad.titleColor || '#0056b3', pad.isPrivate === 1);
+                          setEditingPadId(null);
+                        }} className="admin-btn" style={{ padding: '2px 8px', fontSize: '12px' }}>save</button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions Column */}
+                  <div className="admin-pad-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', marginTop: '4px' }}>
                     <button
-                      onClick={() => navigate(`/${pad.id}`)}
-                      className="pad-title-btn"
+                      onClick={() => handleCopyUrl(pad.id)}
+                      className="admin-btn copy-url-btn"
+                    >
+                      copy url
+                    </button>
+                    {editingPadId === pad.id ? (
+                      <button onClick={() => setEditingPadId(null)} className="admin-btn">
+                        cancel
+                      </button>
+                    ) : (
+                      <button onClick={() => setEditingPadId(pad.id)} className="admin-btn">
+                        edit
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteWorld(pad.id)}
+                      className="admin-btn"
                       style={{
-                        background: getComplementaryColor(pad.titleColor || '#0056b3'),
-                        color: pad.titleColor || '#0056b3',
-                        width: 'fit-content'
+                        color: deleteConfirmId === pad.id ? 'white' : 'red',
+                        backgroundColor: deleteConfirmId === pad.id ? '#d9534f' : 'transparent',
+                        borderColor: deleteConfirmId === pad.id ? '#d43f3a' : '#ccc',
+                        fontWeight: deleteConfirmId === pad.id ? 'bold' : 'normal'
                       }}
                     >
-                      {pad.title}
+                      {deleteConfirmId === pad.id ? 'confirm' : 'delete'}
                     </button>
+                  </div>
+                </div>
+
+                {/* Mobile Layout (Order: Date -> Title -> URL -> Menu) */}
+                <div className="admin-pad-row mobile-only" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px' }}>
+                  {/* 1. Date & Badge Row */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <span className="pad-date" style={{ color: adminTextColor }}>{pad.date}</span>
                     {pad.isPrivate === 1 ? (
-                      <span style={{ 
-                        fontSize: '11px', 
-                        color: '#ff4d4f', 
+                      <span style={{
+                        fontSize: '11px',
+                        color: '#ff4d4f',
                         border: '1px solid #ff4d4f',
                         padding: '1px 5px',
                         fontWeight: 'bold',
@@ -930,9 +1381,9 @@ export default function Admin() {
                         private
                       </span>
                     ) : (
-                      <span style={{ 
-                        fontSize: '11px', 
-                        color: '#2ea44f', 
+                      <span style={{
+                        fontSize: '11px',
+                        color: '#2ea44f',
                         border: '1px solid #2ea44f',
                         padding: '1px 5px',
                         fontWeight: 'bold',
@@ -944,265 +1395,130 @@ export default function Admin() {
                     )}
                   </div>
 
-                  {/* URL */}
-                  <span className="pad-url" style={{ color: adminTextColor, paddingLeft: '8px' }}>
-                    {window.location.origin}/{pad.id}
-                  </span>
-
-                  {/* Stats */}
-                  <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', paddingLeft: '8px' }}>
-                    <span>note {pad.memoCount || 0}</span>
-                    <span>·</span>
-                    <span>sound {pad.soundCount || 0}</span>
-                    <span>·</span>
-                    <span>scene {pad.sceneCount || 0}</span>
+                  {/* 2. Title Row */}
+                  <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <button
+                      onClick={() => navigate(`/${pad.id}`)}
+                      className="pad-title-btn"
+                      style={{
+                        background: getComplementaryColor(pad.titleColor || '#0056b3'),
+                        color: pad.titleColor || '#0056b3',
+                        width: 'fit-content'
+                      }}
+                    >
+                      {pad.title}
+                    </button>
                   </div>
 
-                  {/* Edit panel */}
+                  {/* 3. Menu (Actions) */}
+                  <div className="admin-pad-actions" style={{ display: 'flex', gap: '8px', width: '100%', marginLeft: 0 }}>
+                    <button
+                      onClick={() => handleCopyUrl(pad.id)}
+                      className="admin-btn copy-url-btn"
+                      style={{ flex: 1 }}
+                    >
+                      copy url
+                    </button>
+                    {editingPadId === pad.id ? (
+                      <button onClick={() => setEditingPadId(null)} className="admin-btn" style={{ flex: 1 }}>
+                        cancel
+                      </button>
+                    ) : (
+                      <button onClick={() => setEditingPadId(pad.id)} className="admin-btn" style={{ flex: 1 }}>
+                        edit
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteWorld(pad.id)}
+                      className="admin-btn"
+                      style={{
+                        flex: 1,
+                        color: deleteConfirmId === pad.id ? 'white' : 'red',
+                        backgroundColor: deleteConfirmId === pad.id ? '#d9534f' : 'transparent',
+                        borderColor: deleteConfirmId === pad.id ? '#d43f3a' : '#ccc',
+                        fontWeight: deleteConfirmId === pad.id ? 'bold' : 'normal'
+                      }}
+                    >
+                      {deleteConfirmId === pad.id ? 'confirm' : 'delete'}
+                    </button>
+                  </div>
+
+                  {/* 4. URL */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: '8px' }}>
+                    <span className="pad-url" style={{ color: adminTextColor, wordBreak: 'break-all' }}>
+                      {window.location.origin}/{pad.id}
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', marginTop: '2px' }}>
+                      <span>note {pad.memoCount || 0}</span>
+                      <span>·</span>
+                      <span>sound {pad.soundCount || 0}</span>
+                      <span>·</span>
+                      <span>scene {pad.sceneCount || 0}</span>
+                    </div>
+                  </div>
+
+                  {/* 5. Edit panel */}
                   {editingPadId === pad.id && (
-                    <div className="admin-edit-panel" style={{ marginTop: '8px' }}>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        name 
-                        <input 
-                          type="text" 
-                          value={pad.title} 
+                    <div className="admin-edit-panel" style={{ width: '100%', marginTop: '4px', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', width: '100%' }}>
+                        name
+                        <input
+                          type="text"
+                          value={pad.title}
                           onChange={e => {
                             const newPads = [...recentPads];
                             const idx = newPads.findIndex(p => p.id === pad.id);
                             newPads[idx].title = e.target.value;
                             setRecentPads(newPads);
-                          }} 
-                          style={{ padding: '2px 4px', fontSize: '12px', border: '1px solid #ccc', background: 'transparent', color: adminTextColor, width: '100px', fontFamily: 'inherit' }}
+                          }}
+                          style={{ padding: '2px 4px', fontSize: '12px', border: '1px solid #ccc', background: 'transparent', color: adminTextColor, flex: 1, fontFamily: 'inherit' }}
                         />
                       </label>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        title_color <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].titleColor = e.target.value;
-                          setRecentPads(newPads);
-                        }} style={{ width: '18px', height: '18px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} />
-                      </label>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        canvas <input type="color" value={pad.canvasBgColor || '#FDFBF7'} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].canvasBgColor = e.target.value;
-                          setRecentPads(newPads);
-                        }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
-                      </label>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        background <input type="color" value={pad.outerBgColor || '#E0E0D0'} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].outerBgColor = e.target.value;
-                          setRecentPads(newPads);
-                        }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
-                      </label>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
-                        private <input type="checkbox" checked={pad.isPrivate === 1} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].isPrivate = e.target.checked ? 1 : 0;
-                          setRecentPads(newPads);
-                        }} style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
-                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', width: '100%' }}>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                          title_color <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].titleColor = e.target.value;
+                            setRecentPads(newPads);
+                          }} style={{ width: '18px', height: '18px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} />
+                        </label>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                          canvas <input type="color" value={pad.canvasBgColor || '#FDFBF7'} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].canvasBgColor = e.target.value;
+                            setRecentPads(newPads);
+                          }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
+                        </label>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                          background <input type="color" value={pad.outerBgColor || '#E0E0D0'} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].outerBgColor = e.target.value;
+                            setRecentPads(newPads);
+                          }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
+                        </label>
+                        <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
+                          private <input type="checkbox" checked={pad.isPrivate === 1} onChange={e => {
+                            const newPads = [...recentPads];
+                            const idx = newPads.findIndex(p => p.id === pad.id);
+                            newPads[idx].isPrivate = e.target.checked ? 1 : 0;
+                            setRecentPads(newPads);
+                          }} style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
+                        </label>
+                      </div>
                       <button onClick={() => {
                         handleUpdateWorld(pad.id, pad.title, pad.canvasBgColor || '#FDFBF7', pad.outerBgColor || '#E0E0D0', pad.titleColor || '#0056b3', pad.isPrivate === 1);
                         setEditingPadId(null);
-                      }} className="admin-btn" style={{ padding: '2px 8px', fontSize: '12px' }}>save</button>
+                      }} className="admin-btn" style={{ padding: '2px 8px', fontSize: '12px', width: '100%', marginTop: '8px' }}>save</button>
                     </div>
                   )}
                 </div>
-
-                {/* Actions Column */}
-                <div className="admin-pad-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', marginTop: '4px' }}>
-                  <button 
-                    onClick={() => handleCopyUrl(pad.id)}
-                    className="admin-btn copy-url-btn"
-                  >
-                    copy url
-                  </button>
-                  {editingPadId === pad.id ? (
-                    <button onClick={() => setEditingPadId(null)} className="admin-btn">
-                      cancel
-                    </button>
-                  ) : (
-                    <button onClick={() => setEditingPadId(pad.id)} className="admin-btn">
-                      edit
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteWorld(pad.id)}
-                    className="admin-btn"
-                    style={{
-                      color: deleteConfirmId === pad.id ? 'white' : 'red',
-                      backgroundColor: deleteConfirmId === pad.id ? '#d9534f' : 'transparent',
-                      borderColor: deleteConfirmId === pad.id ? '#d43f3a' : '#ccc',
-                      fontWeight: deleteConfirmId === pad.id ? 'bold' : 'normal'
-                    }}
-                  >
-                    {deleteConfirmId === pad.id ? 'confirm' : 'delete'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Mobile Layout (Order: Date -> Title -> URL -> Menu) */}
-              <div className="admin-pad-row mobile-only" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px' }}>
-                {/* 1. Date & Badge Row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <span className="pad-date" style={{ color: adminTextColor }}>{pad.date}</span>
-                  {pad.isPrivate === 1 ? (
-                    <span style={{ 
-                      fontSize: '11px', 
-                      color: '#ff4d4f', 
-                      border: '1px solid #ff4d4f',
-                      padding: '1px 5px',
-                      fontWeight: 'bold',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      private
-                    </span>
-                  ) : (
-                    <span style={{ 
-                      fontSize: '11px', 
-                      color: '#2ea44f', 
-                      border: '1px solid #2ea44f',
-                      padding: '1px 5px',
-                      fontWeight: 'bold',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>
-                      public
-                    </span>
-                  )}
-                </div>
-
-                {/* 2. Title Row */}
-                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <button
-                    onClick={() => navigate(`/${pad.id}`)}
-                    className="pad-title-btn"
-                    style={{
-                      background: getComplementaryColor(pad.titleColor || '#0056b3'),
-                      color: pad.titleColor || '#0056b3',
-                      width: 'fit-content'
-                    }}
-                  >
-                    {pad.title}
-                  </button>
-                </div>
-
-                {/* 3. Menu (Actions) */}
-                <div className="admin-pad-actions" style={{ display: 'flex', gap: '8px', width: '100%', marginLeft: 0 }}>
-                  <button 
-                    onClick={() => handleCopyUrl(pad.id)}
-                    className="admin-btn copy-url-btn"
-                    style={{ flex: 1 }}
-                  >
-                    copy url
-                  </button>
-                  {editingPadId === pad.id ? (
-                    <button onClick={() => setEditingPadId(null)} className="admin-btn" style={{ flex: 1 }}>
-                      cancel
-                    </button>
-                  ) : (
-                    <button onClick={() => setEditingPadId(pad.id)} className="admin-btn" style={{ flex: 1 }}>
-                      edit
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteWorld(pad.id)}
-                    className="admin-btn"
-                    style={{
-                      flex: 1,
-                      color: deleteConfirmId === pad.id ? 'white' : 'red',
-                      backgroundColor: deleteConfirmId === pad.id ? '#d9534f' : 'transparent',
-                      borderColor: deleteConfirmId === pad.id ? '#d43f3a' : '#ccc',
-                      fontWeight: deleteConfirmId === pad.id ? 'bold' : 'normal'
-                    }}
-                  >
-                    {deleteConfirmId === pad.id ? 'confirm' : 'delete'}
-                  </button>
-                </div>
-
-                {/* 4. URL */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: '8px' }}>
-                  <span className="pad-url" style={{ color: adminTextColor, wordBreak: 'break-all' }}>
-                    {window.location.origin}/{pad.id}
-                  </span>
-                  <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: adminTextColor, opacity: 0.8, fontFamily: 'monospace', marginTop: '2px' }}>
-                    <span>note {pad.memoCount || 0}</span>
-                    <span>·</span>
-                    <span>sound {pad.soundCount || 0}</span>
-                    <span>·</span>
-                    <span>scene {pad.sceneCount || 0}</span>
-                  </div>
-                </div>
-
-                {/* 5. Edit panel */}
-                {editingPadId === pad.id && (
-                  <div className="admin-edit-panel" style={{ width: '100%', marginTop: '4px', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-                    <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', width: '100%' }}>
-                      name 
-                      <input 
-                        type="text" 
-                        value={pad.title} 
-                        onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].title = e.target.value;
-                          setRecentPads(newPads);
-                        }} 
-                        style={{ padding: '2px 4px', fontSize: '12px', border: '1px solid #ccc', background: 'transparent', color: adminTextColor, flex: 1, fontFamily: 'inherit' }}
-                      />
-                    </label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', width: '100%' }}>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        title_color <input type="color" value={pad.titleColor || '#0056b3'} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].titleColor = e.target.value;
-                          setRecentPads(newPads);
-                        }} style={{ width: '18px', height: '18px', border: 'none', padding: 0, cursor: 'pointer', background: 'transparent' }} />
-                      </label>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        canvas <input type="color" value={pad.canvasBgColor || '#FDFBF7'} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].canvasBgColor = e.target.value;
-                          setRecentPads(newPads);
-                        }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
-                      </label>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
-                        background <input type="color" value={pad.outerBgColor || '#E0E0D0'} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].outerBgColor = e.target.value;
-                          setRecentPads(newPads);
-                        }} style={{ width: '18px', height: '18px', cursor: 'pointer', background: 'transparent', border: 'none', padding: 0 }} />
-                      </label>
-                      <label style={{ color: adminTextColor, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
-                        private <input type="checkbox" checked={pad.isPrivate === 1} onChange={e => {
-                          const newPads = [...recentPads];
-                          const idx = newPads.findIndex(p => p.id === pad.id);
-                          newPads[idx].isPrivate = e.target.checked ? 1 : 0;
-                          setRecentPads(newPads);
-                        }} style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
-                      </label>
-                    </div>
-                    <button onClick={() => {
-                      handleUpdateWorld(pad.id, pad.title, pad.canvasBgColor || '#FDFBF7', pad.outerBgColor || '#E0E0D0', pad.titleColor || '#0056b3', pad.isPrivate === 1);
-                      setEditingPadId(null);
-                    }} className="admin-btn" style={{ padding: '2px 8px', fontSize: '12px', width: '100%', marginTop: '8px' }}>save</button>
-                  </div>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
