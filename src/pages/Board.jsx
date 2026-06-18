@@ -2340,7 +2340,7 @@ export default function Board() {
                     </div>
 
                     {m.isExpanded && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '12px 10px', backgroundColor: 'transparent', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '12px 10px', backgroundColor: 'transparent', flexShrink: 0 }}>
                         {isLocked ? (
                           <span style={{ fontSize: '13px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
                             {lockedMemos[m.id]}님이 수정 중...

@@ -833,7 +833,7 @@ body {
 
 .mobile-memo-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   padding-top: 12px;
   margin-top: 4px;
