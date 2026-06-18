@@ -85,6 +85,18 @@ async function initializeDatabase(database) {
     // Column might already exist
   }
 
+  // Create comments table
+  await database.exec(`
+    CREATE TABLE IF NOT EXISTS comments (
+      id TEXT PRIMARY KEY,
+      memoId INTEGER,
+      padId TEXT,
+      author TEXT,
+      content TEXT,
+      date TEXT
+    )
+  `);
+
   // Insert default settings if not exists
   const homeSettings = await database.get('SELECT value FROM settings WHERE key = ?', 'homeSettings');
   if (!homeSettings) {

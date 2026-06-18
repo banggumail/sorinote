@@ -453,7 +453,9 @@ app.get('/api/pads/:padId', async (req, res) => {
       };
     });
 
-    res.json({ pad, memos: parsedMemos });
+    const comments = await db.all('SELECT * FROM comments WHERE padId = ?', padId);
+
+    res.json({ pad, memos: parsedMemos, comments });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -501,6 +503,7 @@ app.delete('/api/pads/:padId', async (req, res) => {
 
     await db.run('DELETE FROM pads WHERE id = ?', padId);
     await db.run('DELETE FROM memos WHERE padId = ?', padId);
+    await db.run('DELETE FROM comments WHERE padId = ?', padId);
 
     // Delete physical files
     for (const memo of memos) {
@@ -711,6 +714,7 @@ io.on('connection', (socket) => {
       const memo = await db.get('SELECT audioUrl, imageUrl FROM memos WHERE id = ? AND padId = ?', id, padId);
 
       await db.run('DELETE FROM memos WHERE id = ? AND padId = ?', id, padId);
+      await db.run('DELETE FROM comments WHERE memoId = ? AND padId = ?', id, padId);
 
       // Delete physical files
       if (memo) {
@@ -735,6 +739,31 @@ io.on('connection', (socket) => {
       socket.to(padId).emit('memo:deleted', { id });
     } catch (e) {
       console.error('Failed to delete memo from DB:', e);
+    }
+  });
+
+  // Handle comment creation
+  socket.on('comment:create', async ({ padId, comment }) => {
+    try {
+      const db = await getDb();
+      await db.run(
+        'INSERT INTO comments (id, memoId, padId, author, content, date) VALUES (?, ?, ?, ?, ?, ?)',
+        comment.id, comment.memoId, padId, comment.author, comment.content, comment.date
+      );
+      socket.to(padId).emit('comment:created', comment);
+    } catch (e) {
+      console.error('Failed to save comment:', e);
+    }
+  });
+
+  // Handle comment deletion
+  socket.on('comment:delete', async ({ padId, id }) => {
+    try {
+      const db = await getDb();
+      await db.run('DELETE FROM comments WHERE id = ? AND padId = ?', id, padId);
+      socket.to(padId).emit('comment:deleted', { id });
+    } catch (e) {
+      console.error('Failed to delete comment:', e);
     }
   });
 

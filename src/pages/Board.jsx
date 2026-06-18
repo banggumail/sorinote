@@ -205,6 +205,7 @@ export default function Board() {
   const [padTitleColor, setPadTitleColor] = useState('');
   const [lastUsedUser, setLastUsedUser] = useState({ name: 'name', color: '#ffffff' });
   const [memos, setMemos] = useState([]);
+  const [comments, setComments] = useState([]);
   const [memoSizes, setMemoSizes] = useState({});
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -432,7 +433,8 @@ export default function Board() {
         return res.json();
       })
       .then(data => {
-        const { pad, memos: loadedMemos } = data;
+        const { pad, memos: loadedMemos, comments: loadedComments } = data;
+        setComments(loadedComments || []);
         setPadTitle(pad.title || padId);
         setPadCreatedAt(pad.date || '');
         if (pad.canvasBgColor) setCanvasBgColor(pad.canvasBgColor);
@@ -512,6 +514,23 @@ export default function Board() {
         return next;
       });
       if (activeMemoId === id) setActiveMemoId(null);
+      // Remove local comments of the deleted memo
+      setComments(prev => prev.filter(c => c.memoId !== id));
+    });
+
+    socket.on('comment:created', (comment) => {
+      setComments(prev => {
+        const idx = prev.findIndex(c => c.id === comment.id);
+        if (idx !== -1) {
+          return prev.map(c => c.id === comment.id ? comment : c);
+        } else {
+          return [...prev, comment];
+        }
+      });
+    });
+
+    socket.on('comment:deleted', ({ id }) => {
+      setComments(prev => prev.filter(c => c.id !== id));
     });
 
     socket.on('cursor:moved', ({ socketId, user, x, y }) => {
@@ -676,6 +695,152 @@ export default function Board() {
     if (socketRef.current) {
       socketRef.current.emit('memo:edit-start', { padId, id, username: lastUsedUser.name });
     }
+  };
+
+  const handleSubmitComment = (e, memoId) => {
+    e.preventDefault();
+    const input = e.target.elements[`comment-input-${memoId}`];
+    const content = input.value.trim();
+    if (!content) return;
+
+    const newComment = {
+      id: `c-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+      memoId,
+      padId,
+      author: lastUsedUser.name && lastUsedUser.name !== 'name' ? lastUsedUser.name : 'Anonymous',
+      content,
+      date: getFormattedDate()
+    };
+
+    setComments(prev => [...prev, newComment]);
+
+    if (socketRef.current) {
+      socketRef.current.emit('comment:create', { padId, comment: newComment });
+    }
+
+    input.value = '';
+  };
+
+  const handleDeleteComment = (commentId) => {
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    if (socketRef.current) {
+      socketRef.current.emit('comment:delete', { padId, id: commentId });
+    }
+  };
+
+  const renderCommentsSection = (m, textColor, borderColor) => {
+    const memoComments = comments.filter(c => c.memoId === m.id);
+
+    return (
+      <div 
+        onClick={(e) => e.stopPropagation()} 
+        style={{ 
+          marginTop: '15px', 
+          borderTop: `1px dashed ${borderColor}`, 
+          paddingTop: '12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}
+      >
+        <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8, color: m.titleColor || textColor, marginBottom: '4px' }}>
+          Comments ({memoComments.length})
+        </div>
+
+        {memoComments.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+            {memoComments.map(comment => (
+              <div 
+                key={comment.id} 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  fontSize: '12px', 
+                  padding: '6px', 
+                  background: 'rgba(0, 0, 0, 0.05)', 
+                  border: `1px solid ${borderColor}`,
+                  boxShadow: '1px 1px 0px rgba(0,0,0,1)',
+                  position: 'relative' 
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ fontWeight: 'bold', color: m.titleColor || textColor }}>
+                    {comment.author}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '9px', opacity: 0.6, color: m.contentColor || textColor }}>
+                      {comment.date}
+                    </span>
+                    <button 
+                      onClick={() => handleDeleteComment(comment.id)}
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        fontSize: '9px', 
+                        color: m.contentColor || textColor, 
+                        opacity: 0.6, 
+                        padding: '0 2px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                      title="댓글 삭제 / Delete comment"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <div style={{ color: m.contentColor || textColor, wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '4px', lineHeight: '1.4' }}>
+                  {comment.content}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form 
+          onSubmit={(e) => handleSubmitComment(e, m.id)}
+          style={{ display: 'flex', gap: '6px', marginTop: '4px' }}
+        >
+          <input
+            type="text"
+            name={`comment-input-${m.id}`}
+            placeholder="댓글 작성... / Write comment..."
+            required
+            autoComplete="off"
+            style={{
+              flex: 1,
+              padding: '6px 8px',
+              fontSize: '12px',
+              border: `1px solid ${borderColor}`,
+              background: 'rgba(255, 255, 255, 0.7)',
+              color: '#000000',
+              fontFamily: 'inherit',
+              borderRadius: '0px'
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: '0 10px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              border: `1px solid ${borderColor}`,
+              background: 'rgba(0, 0, 0, 0.1)',
+              color: textColor,
+              cursor: 'pointer',
+              borderRadius: '0px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            등록
+          </button>
+        </form>
+      </div>
+    );
   };
 
   const handlePublish = async (id, title, author, content, color, audioFile, imageFile) => {
@@ -1190,10 +1355,15 @@ export default function Board() {
                         </div>
                       )}
 
-                      {m.isExpanded && m.content && (
-                        <div className="mobile-memo-content" style={{ color: m.contentColor || textColor, paddingTop: '10px', marginTop: '4px' }}>
-                          {m.content}
-                        </div>
+                      {m.isExpanded && (
+                        <>
+                          {m.content && (
+                            <div className="mobile-memo-content" style={{ color: m.contentColor || textColor, paddingTop: '10px', marginTop: '4px' }}>
+                              {m.content}
+                            </div>
+                          )}
+                          {renderCommentsSection(m, textColor, borderColor)}
+                        </>
                       )}
 
                       {m.isExpanded && (
@@ -2160,9 +2330,12 @@ export default function Board() {
                       )}
                       
                       {m.isExpanded && (
-                        <div style={{ color: m.contentColor || textColor, fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
-                          {m.content}
-                        </div>
+                        <>
+                          <div style={{ color: m.contentColor || textColor, fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
+                            {m.content}
+                          </div>
+                          {renderCommentsSection(m, textColor, borderColor)}
+                        </>
                       )}
                     </div>
 
