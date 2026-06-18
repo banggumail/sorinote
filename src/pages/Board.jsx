@@ -741,7 +741,6 @@ export default function Board() {
       <div 
         onClick={(e) => e.stopPropagation()} 
         style={{ 
-          borderTop: `1px dashed ${borderColor}`, 
           padding: '10px',
           display: 'flex',
           flexDirection: 'column',
@@ -760,16 +759,19 @@ export default function Board() {
                   display: 'flex', 
                   flexDirection: 'column', 
                   fontSize: '12px', 
-                  padding: '6px', 
+                  padding: '4px 6px',
                   background: 'rgba(0, 0, 0, 0.05)', 
                   border: `1px solid ${borderColor}`,
                   position: 'relative' 
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                  <div style={{ color: m.contentColor || textColor, wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: '1.4', flex: 1 }}>
-                    {comment.content}
-                  </div>
+                <div style={{ color: m.contentColor || textColor, wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                  {comment.content}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '9px', opacity: 0.6, color: m.contentColor || textColor }}>
+                    {comment.date}
+                  </span>
                   <button 
                     onClick={() => setDeletePromptCommentId(comment.id)}
                     style={{ 
@@ -783,18 +785,12 @@ export default function Board() {
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontFamily: 'inherit',
-                      marginTop: '2px'
+                      fontFamily: 'inherit'
                     }}
                     title="댓글 삭제 / Delete comment"
                   >
                     ✕
                   </button>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                  <span style={{ fontSize: '9px', opacity: 0.6, color: m.contentColor || textColor }}>
-                    {comment.date}
-                  </span>
                 </div>
               </div>
             ))}
@@ -2369,14 +2365,14 @@ export default function Board() {
                           </span>
                         ) : (
                           <>
-                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'none', padding: 0, fontFamily: 'inherit', fontWeight: 'normal' }}>edit</button>
+                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: textColor, textDecoration: 'none', padding: 0, fontFamily: 'inherit', fontWeight: 'normal' }}>edit</button>
                             <button 
                               onClick={() => handleDeleteMemo(m.id)} 
                               style={{ 
                                 background: deleteConfirmMemoId === m.id ? (isReddish(m.color) ? '#000000' : '#d9534f') : 'none', 
                                 border: 'none', 
                                 cursor: 'pointer', 
-                                fontSize: `${14}px`, 
+                                fontSize: '13px', 
                                 color: deleteConfirmMemoId === m.id ? 'white' : textColor, 
                                 padding: deleteConfirmMemoId === m.id ? '2px 6px' : '0',
                                 borderRadius: '0px',
