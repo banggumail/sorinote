@@ -751,7 +751,7 @@ export default function Board() {
         }}
       >
         {memoComments.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '4px' }}>
             {memoComments.map(comment => (
               <div 
                 key={comment.id} 
