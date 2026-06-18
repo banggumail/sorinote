@@ -1741,8 +1741,9 @@ export default function Board() {
       </div>
 
       {/* 우측 상단: 글쓰기 동그라미 버튼 */}
-      <button onPointerDown={(e) => e.stopPropagation()} className={`write-btn ${isWriting ? 'active' : ''}`} onClick={handleWriteNew} style={{ transform: `scale(${uiScale})`, transformOrigin: 'top right', position: 'fixed', top: '20px', right: '20px', margin: 0, zIndex: 2000, pointerEvents: 'auto', border: 'none' }}>
-        쓰기
+      <button onPointerDown={(e) => e.stopPropagation()} className={`write-btn ${isWriting ? 'active' : ''}`} onClick={handleWriteNew} style={{ transform: `scale(${uiScale})`, transformOrigin: 'top right', position: 'fixed', top: '20px', right: '20px', margin: 0, zIndex: 2000, pointerEvents: 'auto', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ lineHeight: '1.2' }}>쓰기</div>
+        <div style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.8, marginTop: '2px' }}>write</div>
       </button>
 
       {/* --- 선택된 메모 정보 표시 --- */}
