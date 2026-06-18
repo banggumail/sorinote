@@ -740,12 +740,14 @@ export default function Board() {
       <div 
         onClick={(e) => e.stopPropagation()} 
         style={{ 
-          marginTop: '15px', 
           borderTop: `1px dashed ${borderColor}`, 
-          paddingTop: '12px',
+          padding: '10px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px'
+          gap: '8px',
+          maxHeight: '350px',
+          overflowY: 'auto',
+          flexShrink: 0
         }}
       >
         <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.8, color: m.titleColor || textColor, marginBottom: '4px' }}>
@@ -788,7 +790,8 @@ export default function Board() {
                         padding: '0 2px',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        fontFamily: 'inherit'
                       }}
                       title="댓글 삭제 / Delete comment"
                     >
@@ -838,7 +841,8 @@ export default function Board() {
               borderRadius: '0px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              fontFamily: 'inherit'
             }}
           >
             등록
@@ -1360,15 +1364,10 @@ export default function Board() {
                         </div>
                       )}
 
-                      {m.isExpanded && (
-                        <>
-                          {m.content && (
-                            <div className="mobile-memo-content" style={{ color: m.contentColor || textColor, paddingTop: '10px', marginTop: '4px' }}>
-                              {m.content}
-                            </div>
-                          )}
-                          {renderCommentsSection(m, textColor, borderColor)}
-                        </>
+                      {m.isExpanded && m.content && (
+                        <div className="mobile-memo-content" style={{ color: m.contentColor || textColor, paddingTop: '10px', marginTop: '4px' }}>
+                          {m.content}
+                        </div>
                       )}
 
                       <div className="mobile-memo-actions" onClick={(e) => e.stopPropagation()}>
@@ -1399,6 +1398,8 @@ export default function Board() {
                           )}
                         </div>
                       </div>
+
+                      {m.isExpanded && renderCommentsSection(m, textColor, borderColor)}
                     </>
                   )}
                 </div>
@@ -2343,12 +2344,9 @@ export default function Board() {
                       )}
                       
                       {m.isExpanded && (
-                        <>
-                          <div style={{ color: m.contentColor || textColor, fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
-                            {m.content}
-                          </div>
-                          {renderCommentsSection(m, textColor, borderColor)}
-                        </>
+                        <div style={{ color: m.contentColor || textColor, fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
+                          {m.content}
+                        </div>
                       )}
                     </div>
 
@@ -2363,7 +2361,8 @@ export default function Board() {
                           color: textColor, 
                           textDecoration: 'underline',
                           padding: 0,
-                          fontWeight: 'bold'
+                          fontWeight: 'bold',
+                          fontFamily: 'inherit'
                         }}
                       >
                         comments ({comments.filter(c => c.memoId === m.id).length})
@@ -2376,7 +2375,7 @@ export default function Board() {
                           </span>
                         ) : (
                           <>
-                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'underline', padding: 0 }}>edit</button>
+                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'underline', padding: 0, fontFamily: 'inherit' }}>edit</button>
                             <button 
                               onClick={() => handleDeleteMemo(m.id)} 
                               style={{ 
@@ -2389,7 +2388,8 @@ export default function Board() {
                                 borderRadius: '0px',
                                 textDecoration: deleteConfirmMemoId === m.id ? 'none' : 'underline',
                                 fontWeight: deleteConfirmMemoId === m.id ? 'bold' : 'normal',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s',
+                                fontFamily: 'inherit'
                               }}
                             >
                               {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
@@ -2398,6 +2398,7 @@ export default function Board() {
                         )}
                       </div>
                     </div>
+                    {m.isExpanded && renderCommentsSection(m, textColor, borderColor)}
                   </div>
                 )}
               </div>

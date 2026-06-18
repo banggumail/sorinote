@@ -847,6 +847,7 @@ body {
   text-decoration: underline;
   padding: 0;
   font-weight: normal;
+  font-family: inherit;
 }
 
 .mobile-delete-confirm-btn {
