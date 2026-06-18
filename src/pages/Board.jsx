@@ -758,7 +758,7 @@ export default function Board() {
                 style={{ 
                   display: 'flex', 
                   flexDirection: 'column', 
-                  fontSize: '12px', 
+                  fontSize: '10px', 
                   padding: '4px 6px',
                   background: 'rgba(0, 0, 0, 0.05)', 
                   border: `1px solid ${borderColor}`,
@@ -804,13 +804,13 @@ export default function Board() {
           <input
             type="text"
             name={`comment-input-${m.id}`}
-            placeholder="댓글 작성... / Write comment..."
+            placeholder="Share your thoughts..."
             required
             autoComplete="off"
             style={{
               flex: 1,
-              padding: '6px 8px',
-              fontSize: '12px',
+              padding: '3px 6px',
+              fontSize: '10px',
               border: `1px solid ${borderColor}`,
               background: 'rgba(255, 255, 255, 0.7)',
               color: '#000000',
@@ -822,8 +822,8 @@ export default function Board() {
             type="submit"
             style={{
               padding: '0 10px',
-              fontSize: '11px',
-              fontWeight: 'bold',
+              fontSize: '10px',
+              fontWeight: 'normal',
               border: `1px solid ${borderColor}`,
               background: 'rgba(0, 0, 0, 0.1)',
               color: textColor,
@@ -835,7 +835,7 @@ export default function Board() {
               fontFamily: 'inherit'
             }}
           >
-            등록
+            enter
           </button>
         </form>
       </div>
