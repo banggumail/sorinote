@@ -1074,7 +1074,7 @@ export default function Board() {
                   <div className="mobile-memo-author-info">
                     {m.author && (
                       <span className="mobile-memo-author" style={{ color: m.titleColor || textColor }}>
-                        {m.author} {isLocked && `(수정 중: ${lockedMemos[m.id]})`}
+                        {m.author} {isLocked && `(editing: ${lockedMemos[m.id]})`}
                       </span>
                     )}
                     <span className="mobile-memo-date" style={{ color: m.titleColor || textColor }}>
@@ -1215,7 +1215,7 @@ export default function Board() {
                                   flexShrink: 0
                                 }}
                               >
-                                삭제
+                                delete
                               </button>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
@@ -1291,7 +1291,7 @@ export default function Board() {
                                   flexShrink: 0
                                 }}
                               >
-                                삭제
+                                delete
                               </button>
                             </div>
                             <img src={getResolvedImageUrl(m.imageUrl)} alt="Preview" className="mobile-memo-image" style={{ border: 'none', maxWidth: '100%', width: 'auto' }} />
@@ -1370,17 +1370,17 @@ export default function Board() {
                         <div className="mobile-memo-actions" onClick={(e) => e.stopPropagation()}>
                           {isLocked ? (
                             <span style={{ fontSize: '12px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
-                              {lockedMemos[m.id]}님이 수정 중...
+                              {lockedMemos[m.id]} is editing...
                             </span>
                           ) : (
                             <>
-                              <button className="mobile-action-btn" onClick={() => handleEditMemo(m.id)} style={{ color: textColor }}>수정</button>
+                              <button className="mobile-action-btn" onClick={() => handleEditMemo(m.id)} style={{ color: textColor }}>edit</button>
                               <button 
                                 className={`mobile-action-btn ${deleteConfirmMemoId === m.id ? `mobile-delete-confirm-btn ${isReddish(m.color) ? 'red-bg-confirm' : ''}` : ''}`}
                                 onClick={() => handleDeleteMemo(m.id)} 
                                 style={{ color: deleteConfirmMemoId === m.id ? '#fff' : textColor }}
                               >
-                                {deleteConfirmMemoId === m.id ? '확인' : '삭제'}
+                                {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
                               </button>
                             </>
                           )}
@@ -2060,7 +2060,7 @@ export default function Board() {
                 <div style={{ display: 'flex', flex: 1, alignItems: 'center', minWidth: 0 }}>
                   {m.author && (
                     <span style={{ fontSize: '14px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {m.author} {isLocked && `(수정 중: ${lockedMemos[m.id]})`}
+                      {m.author} {isLocked && `(editing: ${lockedMemos[m.id]})`}
                     </span>
                   )}
                   <span style={{ fontSize: '12px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: 'auto', marginRight: '8px', opacity: 0.8 }}>
@@ -2343,11 +2343,11 @@ export default function Board() {
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '12px 10px', backgroundColor: 'transparent', flexShrink: 0 }}>
                         {isLocked ? (
                           <span style={{ fontSize: '13px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
-                            {lockedMemos[m.id]}님이 수정 중...
+                            {lockedMemos[m.id]} is editing...
                           </span>
                         ) : (
                           <>
-                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'underline' }}>수정</button>
+                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: `${14}px`, color: textColor, textDecoration: 'underline' }}>edit</button>
                             <button 
                               onClick={() => handleDeleteMemo(m.id)} 
                               style={{ 
@@ -2363,7 +2363,7 @@ export default function Board() {
                                 transition: 'all 0.2s'
                               }}
                             >
-                              {deleteConfirmMemoId === m.id ? '확인' : '삭제'}
+                              {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
                             </button>
                           </>
                         )}
