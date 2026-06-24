@@ -1319,22 +1319,6 @@ export default function Board() {
                           'done'
                         </button>
                       </div>
-                      {/* Footer controls */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              marginTop: '4px',
-              flexShrink: 0
-            }}>
-              <button type="button" onPointerDown={(e) => { e.preventDefault(); handleCancelEdit(m); }} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
-              <button
-                type="button"
-                onPointerDown={(e) => { e.preventDefault(); handleSubmitMemo({ preventDefault: () => {} }, m.id); }}
-                className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
-                done
-              </button>
-            </div>
           </form>
                   ) : (
                     <>
@@ -1676,6 +1660,22 @@ export default function Board() {
               }}
             />
 
+            {/* Footer controls */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              marginTop: '4px',
+              flexShrink: 0
+            }}>
+              <button type="button" onPointerDown={(e) => { e.preventDefault(); handleCancelEdit(m); }} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
+              <button
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleSubmitMemo({ preventDefault: () => {} }, m.id); }}
+                className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                done
+              </button>
+            </div>
           </form>
         </div>
       </div>
