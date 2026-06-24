@@ -437,6 +437,20 @@ app.get('/api/pads', async (req, res) => {
 
     const parseCustomDate = (dateStr) => {
       if (!dateStr) return 0;
+      const parts = dateStr.split(' ');
+      if (parts.length === 2) {
+        const dateParts = parts[0].split('.');
+        const timeParts = parts[1].split(':');
+        if (dateParts.length === 3 && timeParts.length === 2) {
+          const year = parseInt(dateParts[0], 10) + 2000;
+          const month = parseInt(dateParts[1], 10) - 1;
+          const day = parseInt(dateParts[2], 10);
+          const hours = parseInt(timeParts[0], 10);
+          const minutes = parseInt(timeParts[1], 10);
+          const parsed = new Date(year, month, day, hours, minutes).getTime();
+          if (!isNaN(parsed)) return parsed;
+        }
+      }
       const normalized = dateStr.replace(/\./g, '-');
       const d = new Date(normalized);
       return isNaN(d.getTime()) ? 0 : d.getTime();
