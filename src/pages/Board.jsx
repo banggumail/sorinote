@@ -2035,22 +2035,23 @@ export default function Board() {
         <div 
           onPointerDown={e => e.stopPropagation()} 
           style={{ 
-            display: 'flex', flexDirection: 'column', gap: '8px', 
+            display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center',
             pointerEvents: 'auto', transform: `scale(${uiScale})`, transformOrigin: 'top left',
-            padding: '10px 0', border: 'none'
+            marginTop: '10px'
           }}
         >
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
-            <span style={{ fontWeight: 'bold' }}>title</span>
-            <input type="color" value={padTitleColor || '#000000'} onChange={(e) => handleColorChange('titleColor', e.target.value)} style={{ width: '18px', height: '18px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, cursor: 'pointer', background: 'transparent' }} />
+          <span style={{ fontWeight: 'bold', fontSize: '12px', color: getContrastColor(outerBgColor || '#E0E0D0') }}>colors_</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+            <span style={{ fontWeight: 'normal' }}>title</span>
+            <input type="color" className="square-color-picker" value={padTitleColor || '#000000'} onChange={(e) => handleColorChange('titleColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
-            <span style={{ fontWeight: 'bold' }}>world</span>
-            <input type="color" value={outerBgColor || '#E0E0D0'} onChange={(e) => handleColorChange('outerBgColor', e.target.value)} style={{ width: '18px', height: '18px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, cursor: 'pointer', background: 'transparent' }} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+            <span style={{ fontWeight: 'normal' }}>world</span>
+            <input type="color" className="square-color-picker" value={outerBgColor || '#E0E0D0'} onChange={(e) => handleColorChange('outerBgColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
-            <span style={{ fontWeight: 'bold' }}>canvas</span>
-            <input type="color" value={canvasBgColor || '#FDFBF7'} onChange={(e) => handleColorChange('canvasBgColor', e.target.value)} style={{ width: '18px', height: '18px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, cursor: 'pointer', background: 'transparent' }} />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+            <span style={{ fontWeight: 'normal' }}>canvas</span>
+            <input type="color" className="square-color-picker" value={canvasBgColor || '#FDFBF7'} onChange={(e) => handleColorChange('canvasBgColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
           </label>
         </div>
       </div>
