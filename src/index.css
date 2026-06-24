@@ -933,11 +933,7 @@ textarea::placeholder {
 
 /* Prevent iOS Safari from auto-zooming on input focus by ensuring font-size is at least 16px */
 @media (max-width: 768px) {
-  input[type="text"],
-  input[type="password"],
-  input[type="number"],
-  input[type="email"],
-  input[type="tel"],
+  input:not([type="color"]):not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
     font-size: 16px !important;
