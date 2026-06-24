@@ -1682,7 +1682,165 @@ export default function Board() {
   const sceneCount = publishedMemos.filter(m => m.imageUrl).length;
 
   if (isMobile) {
-    return renderMobileBoard();
+    return (
+      <>
+        {renderMobileBoard()}
+        {/* MODALS INJECTED FOR MOBILE */}
+        {/* Delete Confirmation Modal */}
+      {deletePromptMemoId && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <div
+            style={{
+              background: '#e8e8e8',
+              border: '1px solid #000',
+              boxShadow: '4px 4px 0px rgba(0,0,0,1)',
+              padding: '24px',
+              width: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px'
+            }}
+          >
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', fontFamily: 'monospace', textAlign: 'center' }}>
+              are you sure?
+            </div>
+            <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+              <button
+                onClick={() => {
+                  performDeleteMemo(deletePromptMemoId);
+                  setDeletePromptMemoId(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                yes
+              </button>
+              <button
+                onClick={() => setDeletePromptMemoId(null)}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                no
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comment Delete Confirmation Modal */}
+      {deletePromptCommentId && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <div
+            style={{
+              background: '#e8e8e8',
+              border: '1px solid #000',
+              boxShadow: '4px 4px 0px rgba(0,0,0,1)',
+              padding: '24px',
+              width: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px'
+            }}
+          >
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', fontFamily: 'monospace', textAlign: 'center' }}>
+              are you sure?
+            </div>
+            <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+              <button
+                onClick={() => {
+                  handleDeleteComment(deletePromptCommentId);
+                  setDeletePromptCommentId(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                yes
+              </button>
+              <button
+                onClick={() => setDeletePromptCommentId(null)}
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  background: '#ffffff',
+                  border: '1px solid #000000',
+                  boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  textAlign: 'center'
+                }}
+              >
+                no
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    
+      </>
+    );
   }
 
   if (!worldExists) {
