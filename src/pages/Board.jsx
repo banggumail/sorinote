@@ -1047,13 +1047,6 @@ export default function Board() {
 
   const isWriting = memos.some(m => m.isEditing);
 
-  
-  const renderModals = () => (
-    <>
-      {renderModals()}
-    </>
-  );
-  
   const renderMobileBoard = () => {
     const sortedMemos = [...memos].filter(m => !m.isEditing).sort((a, b) => {
       return b.id - a.id;
