@@ -540,6 +540,12 @@ export default function Board() {
       setComments(prev => prev.filter(c => c.id !== id));
     });
 
+    socket.on('pad:colors-updated', ({ titleColor, outerBgColor, canvasBgColor }) => {
+      if (titleColor) setPadTitleColor(titleColor);
+      if (outerBgColor) setOuterBgColor(outerBgColor);
+      if (canvasBgColor) setCanvasBgColor(canvasBgColor);
+    });
+
     socket.on('cursor:moved', ({ socketId, user, x, y }) => {
       setCursors(prev => ({ ...prev, [socketId]: { user, x, y } }));
     });
@@ -1036,6 +1042,32 @@ export default function Board() {
     e.stopPropagation();
     setIsDraggingMinimap(true);
     updateScrollFromMinimap(e.clientX, e.clientY);
+  };
+
+  const handleColorChange = (type, value) => {
+    let updatedTitleColor = padTitleColor;
+    let updatedOuterBg = outerBgColor;
+    let updatedCanvasBg = canvasBgColor;
+
+    if (type === 'titleColor') {
+      updatedTitleColor = value;
+      setPadTitleColor(value);
+    } else if (type === 'outerBgColor') {
+      updatedOuterBg = value;
+      setOuterBgColor(value);
+    } else if (type === 'canvasBgColor') {
+      updatedCanvasBg = value;
+      setCanvasBgColor(value);
+    }
+
+    if (socketRef.current) {
+      socketRef.current.emit('pad:update-colors', {
+        padId,
+        titleColor: updatedTitleColor,
+        outerBgColor: updatedOuterBg,
+        canvasBgColor: updatedCanvasBg
+      });
+    }
   };
 
   const getResolvedAudioUrl = (url) => {
@@ -1975,17 +2007,19 @@ export default function Board() {
       `}</style>
 
       {/* 좌측 상단: 원형 제목/날짜 패널 */}
-      <div
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => handleZoomChange(minZoom)}
-        className="info-circle"
-        style={{
-          transform: `scale(${uiScale})`, transformOrigin: 'top left', position: 'fixed', top: '20px', left: '20px', width: '150px', height: '150px',
-          borderRadius: '50%', background: 'white', border: 'none',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2000, padding: '10px',
-          textAlign: 'center', wordBreak: 'keep-all', overflowWrap: 'break-word', pointerEvents: 'auto', cursor: 'pointer'
-        }}>
+      {/* 좌측 상단: 패널 및 색상 피커 래퍼 */}
+      <div style={{ position: 'fixed', top: '20px', left: '20px', zIndex: 2000, display: 'flex', alignItems: 'flex-start', gap: '15px', pointerEvents: 'none' }}>
+        <div
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => handleZoomChange(minZoom)}
+          className="info-circle"
+          style={{
+            transform: `scale(${uiScale})`, transformOrigin: 'top left', width: '150px', height: '150px',
+            borderRadius: '50%', background: 'white', border: 'none',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '10px', pointerEvents: 'auto', cursor: 'pointer',
+            textAlign: 'center', wordBreak: 'keep-all', overflowWrap: 'break-word'
+          }}>
         <div className="title-wrapper">
           <strong
             className="title-text"
@@ -1995,6 +2029,30 @@ export default function Board() {
           </strong>
         </div>
         <span style={{ fontSize: '13px', color: '#666', fontFamily: 'monospace' }}>{padCreatedAt}</span>
+      </div>
+
+        {/* Desktop Color Pickers */}
+        <div 
+          onPointerDown={e => e.stopPropagation()} 
+          style={{ 
+            display: 'flex', flexDirection: 'column', gap: '8px', 
+            pointerEvents: 'auto', transform: `scale(${uiScale})`, transformOrigin: 'top left',
+            padding: '10px 0', border: 'none'
+          }}
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+            <span style={{ fontWeight: 'bold' }}>title</span>
+            <input type="color" value={padTitleColor || '#000000'} onChange={(e) => handleColorChange('titleColor', e.target.value)} style={{ width: '18px', height: '18px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, cursor: 'pointer', background: 'transparent' }} />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+            <span style={{ fontWeight: 'bold' }}>world</span>
+            <input type="color" value={outerBgColor || '#E0E0D0'} onChange={(e) => handleColorChange('outerBgColor', e.target.value)} style={{ width: '18px', height: '18px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, cursor: 'pointer', background: 'transparent' }} />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+            <span style={{ fontWeight: 'bold' }}>canvas</span>
+            <input type="color" value={canvasBgColor || '#FDFBF7'} onChange={(e) => handleColorChange('canvasBgColor', e.target.value)} style={{ width: '18px', height: '18px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, cursor: 'pointer', background: 'transparent' }} />
+          </label>
+        </div>
       </div>
 
       {/* 중앙 상단: 작성자 설정 및 리소스 카운트 통합 패널 */}

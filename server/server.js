@@ -856,6 +856,19 @@ io.on('connection', (socket) => {
     socket.to(padId).emit('cursor:moved', { socketId: socket.id, user, x, y });
   });
 
+  socket.on('pad:update-colors', async ({ padId, titleColor, outerBgColor, canvasBgColor }) => {
+    try {
+      const db = await getDb();
+      await db.run(
+        'UPDATE pads SET titleColor = ?, outerBgColor = ?, canvasBgColor = ? WHERE id = ?',
+        titleColor, outerBgColor, canvasBgColor, padId
+      );
+      io.to(padId).emit('pad:colors-updated', { titleColor, outerBgColor, canvasBgColor });
+    } catch (err) {
+      console.error('Failed to update pad colors', err);
+    }
+  });
+
   // Handle user leaving pad/cursor hide
   socket.on('disconnect', () => {
     console.log(`Socket disconnected: ${socket.id}`);
