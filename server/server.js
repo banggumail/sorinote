@@ -442,7 +442,8 @@ app.get('/api/pads', async (req, res) => {
         const dateParts = parts[0].split('.');
         const timeParts = parts[1].split(':');
         if (dateParts.length === 3 && timeParts.length === 2) {
-          const year = parseInt(dateParts[0], 10) + 2000;
+          let rawYear = parseInt(dateParts[0], 10);
+          const year = rawYear < 100 ? rawYear + 2000 : rawYear;
           const month = parseInt(dateParts[1], 10) - 1;
           const day = parseInt(dateParts[2], 10);
           const hours = parseInt(timeParts[0], 10);
