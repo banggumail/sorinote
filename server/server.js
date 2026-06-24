@@ -486,7 +486,7 @@ app.get('/api/pads', async (req, res) => {
       }
     }
 
-    rows.sort((a, b) => parseCustomDate(b.lastDate || b.date) - parseCustomDate(a.lastDate || a.date));
+    rows.sort((a, b) => parseCustomDate(b.date) - parseCustomDate(a.date));
 
     res.json(rows);
   } catch (error) {
