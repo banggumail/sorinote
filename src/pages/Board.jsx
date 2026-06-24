@@ -1671,7 +1671,11 @@ export default function Board() {
               <button type="button" onPointerDown={(e) => { e.preventDefault(); handleCancelEdit(m); }} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
               <button
                 type="button"
-                onPointerDown={(e) => { e.preventDefault(); handleSubmitMemo({ preventDefault: () => {} }, m.id); }}
+                onPointerDown={(e) => { 
+                  e.preventDefault(); 
+                  const form = document.getElementById(`mobile-form-${m.id}`);
+                  if (form) form.requestSubmit();
+                }}
                 className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
                 done
               </button>
