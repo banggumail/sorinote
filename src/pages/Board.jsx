@@ -972,7 +972,11 @@ export default function Board() {
       } catch (err) {
         console.error('Audio upload failed:', err);
         setUploadProgressLog('');
-        alert(`소리 파일 업로드에 실패했습니다: ${err.message || err}`);
+        if (err.message && err.message.includes('413')) {
+          alert(`[ERROR 413] UPLOAD_FAILED\n--------------------------------------------------\nFATAL: File size exceeds the maximum limit (300MB).\nUpload aborted due to capacity overflow.\n--------------------------------------------------`);
+        } else {
+          alert(`소리 파일 업로드에 실패했습니다: ${err.message || err}`);
+        }
         return;
       }
     }
@@ -986,7 +990,11 @@ export default function Board() {
       } catch (err) {
         console.error('Image upload failed:', err);
         setUploadProgressLog('');
-        alert(`이미지 파일 업로드에 실패했습니다: ${err.message || err}`);
+        if (err.message && err.message.includes('413')) {
+          alert(`[ERROR 413] UPLOAD_FAILED\n--------------------------------------------------\nFATAL: File size exceeds the maximum limit (300MB).\nUpload aborted due to capacity overflow.\n--------------------------------------------------`);
+        } else {
+          alert(`이미지 파일 업로드에 실패했습니다: ${err.message || err}`);
+        }
         return;
       }
     }
@@ -1351,7 +1359,7 @@ export default function Board() {
                       <div className="mobile-edit-footer" style={{ justifyContent: 'flex-end' }}>
                         <button type="button" onClick={() => handleCancelEdit(m)} className="mobile-edit-submit-btn" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
                         <button type="submit" className="mobile-edit-submit-btn" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
-                          'done'
+                          done
                         </button>
                       </div>
           </form>
@@ -1603,9 +1611,9 @@ export default function Board() {
                         const input = document.getElementById(`audio-input-${m.id}-modal`);
                         if (input) input.value = '';
                       }}
-                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
+                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '8px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                     >
-                      삭제
+                      delete
                     </button>
                   </div>
                 )}
@@ -1652,9 +1660,9 @@ export default function Board() {
                         const input = document.getElementById(`image-input-${m.id}-modal`);
                         if (input) input.value = '';
                       }}
-                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
+                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '8px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                     >
-                      삭제
+                      delete
                     </button>
                   </div>
                   <img src={getResolvedImageUrl(m.imageUrl)} alt="Preview" style={{ maxWidth: '100%', width: 'auto', maxHeight: '140px', objectFit: 'contain', border: 'none' }} />
@@ -2338,9 +2346,9 @@ export default function Board() {
                                       const input = document.getElementById(`audio-input-${m.id}-desktop`);
                                       if (input) input.value = '';
                                     }}
-                                    className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
+                                    className="file-upload-label" style={{ padding: '1px 8px', fontSize: '8px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                                   >
-                                    삭제
+                                    delete
                                   </button>
                                 </div>
                               )}
@@ -2388,9 +2396,9 @@ export default function Board() {
                                         const input = document.getElementById(`image-input-${m.id}-desktop`);
                                         if (input) input.value = '';
                                       }}
-                                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
+                                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '8px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                                     >
-                                      삭제
+                                      delete
                                     </button>
                                   </div>
                                   <img src={getResolvedImageUrl(m.imageUrl)} alt="Preview" style={{ maxWidth: '100%', objectFit: 'contain', maxHeight: '150px' }} />
@@ -2404,7 +2412,7 @@ export default function Board() {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
                             <button type="button" onClick={() => handleCancelEdit(m)} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
                             <button type="submit" className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
-                              'done'
+                              done
                             </button>
                           </div>
                         </form>
