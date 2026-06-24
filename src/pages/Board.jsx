@@ -2032,28 +2032,30 @@ export default function Board() {
       </div>
 
         {/* Desktop Color Pickers */}
-        <div 
-          onPointerDown={e => e.stopPropagation()} 
-          style={{ 
-            display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center',
-            pointerEvents: 'auto', transform: `scale(${uiScale})`, transformOrigin: 'top left',
-            marginTop: '10px'
-          }}
-        >
-          <span style={{ fontWeight: 'bold', fontSize: '12px', color: getContrastColor(outerBgColor || '#E0E0D0') }}>colors_</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
-            <span style={{ fontWeight: 'normal' }}>title</span>
-            <input type="color" className="square-color-picker" value={padTitleColor || '#000000'} onChange={(e) => handleColorChange('titleColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
-            <span style={{ fontWeight: 'normal' }}>world</span>
-            <input type="color" className="square-color-picker" value={outerBgColor || '#E0E0D0'} onChange={(e) => handleColorChange('outerBgColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
-            <span style={{ fontWeight: 'normal' }}>canvas</span>
-            <input type="color" className="square-color-picker" value={canvasBgColor || '#FDFBF7'} onChange={(e) => handleColorChange('canvasBgColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
-          </label>
-        </div>
+        {Math.abs(zoomLevel - minZoom) < 0.01 && (
+          <div 
+            onPointerDown={e => e.stopPropagation()} 
+            style={{ 
+              display: 'flex', flexDirection: 'row', gap: '10px', alignItems: 'center',
+              pointerEvents: 'auto', transform: `scale(${uiScale})`, transformOrigin: 'top left',
+              marginTop: '10px'
+            }}
+          >
+            <span style={{ fontWeight: 'bold', fontSize: '12px', color: getContrastColor(outerBgColor || '#E0E0D0') }}>colors_</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+              <span style={{ fontWeight: 'normal' }}>title</span>
+              <input type="color" className="square-color-picker" value={padTitleColor || '#000000'} onChange={(e) => handleColorChange('titleColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+              <span style={{ fontWeight: 'normal' }}>world</span>
+              <input type="color" className="square-color-picker" value={outerBgColor || '#E0E0D0'} onChange={(e) => handleColorChange('outerBgColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer', color: getContrastColor(outerBgColor || '#E0E0D0') }}>
+              <span style={{ fontWeight: 'normal' }}>canvas</span>
+              <input type="color" className="square-color-picker" value={canvasBgColor || '#FDFBF7'} onChange={(e) => handleColorChange('canvasBgColor', e.target.value)} style={{ width: '12px', height: '12px', border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, padding: 0, flexShrink: 0, cursor: 'pointer', background: 'transparent' }} />
+            </label>
+          </div>
+        )}
       </div>
 
       {/* 중앙 상단: 작성자 설정 및 리소스 카운트 통합 패널 */}
