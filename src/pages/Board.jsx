@@ -1676,6 +1676,23 @@ export default function Board() {
     );
   };
 
+  // Prevent background scrolling on mobile when edit modal is open
+  const isEditingMemo = memos.some(m => m.isEditing);
+  useEffect(() => {
+    if (isMobile && isEditingMemo) {
+      document.body.style.overflow = 'hidden';
+      // Also lock the root element to prevent iOS Safari rubber-banding
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isMobile, isEditingMemo]);
+
   const publishedMemos = memos.filter(m => !m.isEditing);
   const memoCount = publishedMemos.length;
   const soundCount = publishedMemos.filter(m => m.audioUrl).length;
