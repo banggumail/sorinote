@@ -1408,7 +1408,6 @@ export default function Board() {
           padding: '16px',
           boxSizing: 'border-box'
         }}
-        onPointerDown={(e) => e.stopPropagation()}
       >
         <div
           className="mobile-edit-modal-card"
@@ -1426,7 +1425,6 @@ export default function Board() {
             boxSizing: 'border-box',
             overflow: 'hidden'
           }}
-          onPointerDown={(e) => e.stopPropagation()}
         >
           {/* Top Header of Editing Overlay */}
           <header style={{
