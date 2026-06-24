@@ -1431,57 +1431,38 @@ export default function Board() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '6px 12px',
+            padding: '10px 16px',
             borderBottom: `1px solid ${borderColor}`,
             color: textColor,
             flexShrink: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.18)'
           }}>
+            <button
+              type="button"
+              onPointerDown={(e) => { e.preventDefault(); handleCancelEdit(m); }}
+              style={{
+                background: 'none', border: 'none', color: textColor, fontSize: '14px', padding: '4px 8px', margin: 0, cursor: 'pointer', outline: 'none'
+              }}
+            >cancel</button>
             <span style={{ fontSize: '12px', fontFamily: 'monospace', opacity: 0.8 }}>
               {m.date || getFormattedDate()}
             </span>
             <button
               type="button"
-              onClick={() => {
-                if (m.title === '' && m.content === '') {
-                  setMemos(memos.filter(memo => memo.id !== m.id));
-                  setLockedMemos(prev => {
-                    const next = { ...prev };
-                    delete next[m.id];
-                    return next;
-                  });
-                  if (activeMemoId === m.id) setActiveMemoId(null);
-                  if (socketRef.current) {
-                    socketRef.current.emit('memo:delete', { padId, id: m.id });
-                  }
-                } else {
-                  setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isEditing: false } : memo));
-                  setLockedMemos(prev => {
-                    const next = { ...prev };
-                    delete next[m.id];
-                    return next;
-                  });
-                  if (socketRef.current) {
-                    socketRef.current.emit('memo:edit-end', { padId, id: m.id });
-                  }
-                }
+              onPointerDown={(e) => {
+                e.preventDefault();
+                const form = document.getElementById(`mobile-form-${m.id}`);
+                if (form) form.requestSubmit();
               }}
               style={{
-                background: 'none',
-                border: 'none',
-                color: 'inherit',
-                fontSize: '11px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                padding: '4px 8px'
+                background: 'none', border: 'none', color: textColor, fontSize: '14px', fontWeight: 'bold', padding: '4px 8px', margin: 0, cursor: 'pointer', outline: 'none'
               }}
-            >
-              X
-            </button>
+            >done</button>
           </header>
 
           {/* Form Body */}
           <form
+            id={`mobile-form-${m.id}`}
             onSubmit={e => {
               e.preventDefault();
               handlePublish(m.id, e.target.t.value, m.author, e.target.c.value, m.color, e.target.audioFile.files[0], e.target.imageFile.files[0]);
@@ -1653,21 +1634,6 @@ export default function Board() {
               }}
             />
 
-            {/* Footer controls */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              marginTop: '4px',
-              flexShrink: 0
-            }}>
-              <button type="button" onClick={() => handleCancelEdit(m)} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
-              <button
-                type="submit"
-                className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
-                done
-              </button>
-            </div>
           </form>
         </div>
       </div>
