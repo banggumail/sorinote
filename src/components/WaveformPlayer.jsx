@@ -18,6 +18,16 @@ const getTranslucentColor = (hex, opacity = 0.3) => {
   return hex;
 };
 
+
+const getContrastColor = (hexColor) => {
+  if (!hexColor || !hexColor.startsWith('#')) return '#000000';
+  const r = parseInt(hexColor.slice(1, 3), 16) || 0;
+  const g = parseInt(hexColor.slice(3, 5), 16) || 0;
+  const b = parseInt(hexColor.slice(5, 7), 16) || 0;
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return (yiq >= 128) ? '#000000' : '#ffffff';
+};
+
 export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor = "#000000", customColor, showFileName = true, peaks, onPlayStateChange }) {
   const containerRef = useRef(null);
   const wavesurferRef = useRef(null);
@@ -269,7 +279,11 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
     return () => {
       isPlayingRef.current = false;
       if (wavesurferRef.current) {
-        wavesurferRef.current.destroy();
+        try {
+          wavesurferRef.current.destroy();
+        } catch (e) {
+          console.error('Error destroying wavesurfer:', e);
+        }
       }
       if (onPlayStateChangeRef.current) {
         onPlayStateChangeRef.current(false);
@@ -356,7 +370,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           height: 14px;
           background: var(--slider-color, currentColor);
           border: 1px groove rgba(255, 255, 255, 0.5);
-          border-radius: 0px;
+          border-radius: 2px;
           margin-top: -4px;
         }
         .retro-volume-slider::-moz-range-track {
@@ -369,12 +383,12 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           height: 14px;
           background: var(--slider-color, currentColor);
           border: 1px groove rgba(255, 255, 255, 0.5);
-          border-radius: 0px;
+          border-radius: 2px;
           box-sizing: border-box;
         }
       `}</style>
       {showFileName && fileName && (
-        <div style={{ fontSize: `${10}px`, color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: `${10}px`, color: textColor, fontWeight: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {fileName}
         </div>
       )}
@@ -384,19 +398,20 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
           onClick={togglePlay}
           disabled={!audioUrl}
           style={{ 
-            background: audioUrl ? textColor : 'rgba(128,128,128,0.5)', color: textColor === "#ffffff" ? "#000" : "#fff", border: 'none', 
-            borderRadius: '50%', width: '30px', height: '30px', 
+            background: audioUrl ? textColor : 'rgba(128,128,128,0.5)', color: getContrastColor(audioUrl ? textColor : 'rgba(128,128,128,0.5)'), border: 'none', 
+            borderRadius: '50%', width: '20px', height: '20px', 
             display: 'flex', alignItems: 'center', justifyContent: 'center', 
-            cursor: 'pointer', flexShrink: 0, fontSize: '12px'
+            cursor: 'pointer', flexShrink: 0, fontSize: '10px'
           }}
         >
           {isPlaying ? '⏸' : '▶'}
         </button>
-        <div ref={containerRef} style={{ flex: 1, cursor: 'pointer', position: 'relative' }}>
-          {!audioUrl && <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', backgroundColor: resolvedColor, opacity: 0.3 }} />}
+        <div style={{ flex: 1, cursor: 'pointer', position: 'relative' }}>
+          {!audioUrl && <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', backgroundColor: resolvedColor, opacity: 0.3, pointerEvents: 'none' }} />}
+          <div ref={containerRef} style={{ width: '100%', height: '40px' }} />
         </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${9}px`, color: textColor === "#ffffff" ? "rgba(255,255,255,0.7)" : "#666", fontFamily: 'monospace' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${9}px`, color: textColor, opacity: 0.8, fontFamily: 'monospace' }}>
         <span>{currentTime}</span>
         <span>{duration}</span>
       </div>
@@ -439,7 +454,7 @@ export default function WaveformPlayer({ memoId, audioUrl, fileName, textColor =
             background: isLooping ? resolvedColor : 'transparent',
             color: isLooping ? (textColor === '#ffffff' ? '#000000' : '#ffffff') : textColor,
             border: `1px solid ${resolvedColor}`,
-            borderRadius: '0px',
+            borderRadius: '2px',
             fontSize: '8px',
             fontWeight: 'bold',
             padding: '1px 5px',

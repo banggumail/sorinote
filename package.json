@@ -12,6 +12,7 @@
     "start": "node server/server.js"
   },
   "dependencies": {
+    "heic2any": "^0.0.4",
     "puppeteer": "^25.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

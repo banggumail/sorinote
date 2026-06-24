@@ -166,12 +166,17 @@ export default function Home() {
                     </span>
                     
                     {/* Stats */}
-                    <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace', paddingLeft: '8px' }}>
-                      <span>note {pad.memoCount || 0}</span>
-                      <span>·</span>
-                      <span>sound {pad.soundCount || 0}</span>
-                      <span>·</span>
-                      <span>scene {pad.sceneCount || 0}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '8px' }}>
+                      <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace' }}>
+                        <span>note {pad.memoCount || 0}</span>
+                        <span>·</span>
+                        <span>sound {pad.soundCount || 0}</span>
+                        <span>·</span>
+                        <span>scene {pad.sceneCount || 0}</span>
+                      </div>
+                      <span style={{ fontSize: '12px', color: normalTextColor, opacity: 0.6, fontFamily: 'monospace' }}>
+                        last updated - {pad.lastDate || pad.date}{pad.lastAuthor ? ` by ${pad.lastAuthor}` : ''}
+                      </span>
                     </div>
                   </div>
 
@@ -236,12 +241,17 @@ export default function Home() {
                     <span className="pad-url" style={{ color: normalTextColor, wordBreak: 'break-all' }}>
                       {window.location.origin}/{pad.id}
                     </span>
-                    <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace', marginTop: '2px' }}>
-                      <span>note {pad.memoCount || 0}</span>
-                      <span>·</span>
-                      <span>sound {pad.soundCount || 0}</span>
-                      <span>·</span>
-                      <span>scene {pad.sceneCount || 0}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                      <div style={{ display: 'flex', gap: '6px', fontSize: '13px', color: normalTextColor, opacity: 0.8, fontFamily: 'monospace' }}>
+                        <span>note {pad.memoCount || 0}</span>
+                        <span>·</span>
+                        <span>sound {pad.soundCount || 0}</span>
+                        <span>·</span>
+                        <span>scene {pad.sceneCount || 0}</span>
+                      </div>
+                      <span style={{ fontSize: '12px', color: normalTextColor, opacity: 0.6, fontFamily: 'monospace' }}>
+                        last updated - {pad.lastDate || pad.date}{pad.lastAuthor ? ` by ${pad.lastAuthor}` : ''}
+                      </span>
                     </div>
                   </div>
                 </div>

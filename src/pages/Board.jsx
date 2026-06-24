@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import WaveformPlayer from '../components/WaveformPlayer';
 import { io } from 'socket.io-client';
+import heic2any from 'heic2any';
 import { API_BASE, SOCKET_URL } from '../config';
 
 const getContrastColor = (hexColor) => {
@@ -141,16 +142,16 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
   const blockH = Math.max(12, h * scaleRate);
 
   return (
-    <div 
+    <div
       style={{
         position: 'absolute',
-        left: memo.x * scaleRate, 
+        left: memo.x * scaleRate,
         top: memo.y * scaleRate,
         width: blockW + 'px',
         height: blockH + 'px',
-        backgroundColor: memo.color, 
-        border: isPlaying ? `1.5px solid ${indicatorColor}` : '1px solid #000', 
-        boxShadow: '1px 1px 0px rgba(0,0,0,0.5)', 
+        backgroundColor: memo.color,
+        border: isPlaying ? `1.5px solid ${indicatorColor}` : '1px solid #000',
+        boxShadow: '1px 1px 0px rgba(0,0,0,0.5)',
         boxSizing: 'border-box',
         display: 'flex',
         justifyContent: 'center',
@@ -161,11 +162,11 @@ const MinimapMemo = ({ memo, scaleRate, w, h }) => {
       }}
     >
       {isPlaying && (
-        <span 
-          style={{ 
-            fontSize: '9px', 
-            color: indicatorColor, 
-            fontWeight: 'bold', 
+        <span
+          style={{
+            fontSize: '9px',
+            color: indicatorColor,
+            fontWeight: 'bold',
             animation: 'minimap-blink 0.8s infinite',
             fontFamily: 'monospace'
           }}
@@ -195,9 +196,9 @@ export default function Board() {
   const { padId } = useParams();
   const navigate = useNavigate();
 
-  const CANVAS_SIZE = 5000; 
-  const MINIMAP_SIZE = 300; 
-  const scaleRate = MINIMAP_SIZE / CANVAS_SIZE; 
+  const CANVAS_SIZE = 5000;
+  const MINIMAP_SIZE = 300;
+  const scaleRate = MINIMAP_SIZE / CANVAS_SIZE;
 
   const [worldExists, setWorldExists] = useState(true);
   const [padCreatedAt, setPadCreatedAt] = useState('');
@@ -205,6 +206,7 @@ export default function Board() {
   const [padTitleColor, setPadTitleColor] = useState('');
   const [lastUsedUser, setLastUsedUser] = useState({ name: 'name', color: '#ffffff' });
   const [memos, setMemos] = useState([]);
+  const [uploadProgressLog, setUploadProgressLog] = useState('');
   const [comments, setComments] = useState([]);
   const [memoSizes, setMemoSizes] = useState({});
 
@@ -229,25 +231,26 @@ export default function Board() {
   const [deletePromptCommentId, setDeletePromptCommentId] = useState(null);
   const socketRef = useRef(null);
   const lastCursorEmit = useRef(0);
+  const memoBackupsRef = useRef({});
 
   const handleUserChange = (newUser) => {
     setLastUsedUser(newUser);
-    setMemos(prev => prev.map(m => m.isEditing ? { ...m, author: newUser.name, color: newUser.color } : m));
+    setMemos(prev => prev.map(m => m.isEditing ? { ...m, author: newUser.name } : m));
     if (socketRef.current) {
       socketRef.current.emit('join-room', { padId, user: newUser });
     }
   };
 
-      
+
   const [draggingMemo, setDraggingMemo] = useState(null);
-  const [isDraggingMinimap, setIsDraggingMinimap] = useState(false); 
+  const [isDraggingMinimap, setIsDraggingMinimap] = useState(false);
 
   const [scrollPos, setScrollPos] = useState({ left: 0, top: 0 });
-  const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight - 60 }); 
+  const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight - 60 });
   const scrollRef = useRef(null);
   const resizeObserverRef = useRef(null);
   const scrollPosRef = useRef({ left: 0, top: 0 });
-  const minimapRef = useRef(null); 
+  const minimapRef = useRef(null);
 
   const [highestZ, setHighestZ] = useState(100);
   const [zoomLevel, setZoomLevel] = useState(() => {
@@ -360,8 +363,8 @@ export default function Board() {
           const prevData = prev[id];
           // Update only if no previous size, layoutKey changed, or height changed significantly (e.g. >15px for lazy images)
           if (
-            !prevData || 
-            prevData.layoutKey !== currentLayoutKey || 
+            !prevData ||
+            prevData.layoutKey !== currentLayoutKey ||
             Math.abs(prevData.h - h) > 15
           ) {
             next[id] = { w, h, layoutKey: currentLayoutKey };
@@ -371,7 +374,7 @@ export default function Board() {
         return changed ? next : prev;
       });
     });
-    
+
     memos.forEach(m => {
       const el = document.getElementById(`memo-${m.id}`);
       if (el) observer.observe(el);
@@ -385,13 +388,13 @@ export default function Board() {
       resizeObserverRef.current.disconnect();
       resizeObserverRef.current = null;
     }
-    
+
     scrollRef.current = el;
-    
+
     if (el) {
       el.scrollLeft = scrollPosRef.current.left;
       el.scrollTop = scrollPosRef.current.top;
-      
+
       const observer = new ResizeObserver(entries => {
         for (let entry of entries) {
           if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
@@ -442,14 +445,14 @@ export default function Board() {
         if (pad.canvasBgColor) setCanvasBgColor(pad.canvasBgColor);
         if (pad.outerBgColor) setOuterBgColor(pad.outerBgColor);
         if (pad.titleColor) setPadTitleColor(pad.titleColor);
-        
+
         const formatted = loadedMemos.map(m => ({
           ...m,
           isEditing: false,
           isExpanded: false
         }));
         setMemos(formatted);
-        
+
         let maxZ = 100;
         loadedMemos.forEach(m => {
           if (m.z && m.z > maxZ) {
@@ -471,6 +474,8 @@ export default function Board() {
     socketRef.current = socket;
 
     socket.emit('join-room', { padId, user: lastUsedUser });
+
+    socket.on('upload:log', (msg) => setUploadProgressLog(msg));
 
     socket.on('locks-sync', (locks) => {
       setLockedMemos(locks);
@@ -561,7 +566,7 @@ export default function Board() {
 
     let cx, cy;
     const activeMemo = activeMemoId ? memos.find(m => m.id === activeMemoId) : null;
-    
+
     if (activeMemo) {
       const memoSize = memoSizes[activeMemoId] || getMemoSize(activeMemo);
       const w = memoSize.w;
@@ -585,7 +590,7 @@ export default function Board() {
     }
 
     setZoomLevel(newZoom);
-    
+
     setTimeout(() => {
       if (scrollRef.current) {
         scrollRef.current.scrollLeft = newScrollLeft;
@@ -608,9 +613,9 @@ export default function Board() {
     if (el && scrollRef.current) {
       const r = el.getBoundingClientRect();
       const containerRect = scrollRef.current.getBoundingClientRect();
-      return { 
-        x: (r.left - containerRect.left + scrollRef.current.scrollLeft) / zoomLevel + (r.width / zoomLevel) / 2, 
-        y: (r.top - containerRect.top + scrollRef.current.scrollTop) / zoomLevel + (r.height / zoomLevel) / 2 
+      return {
+        x: (r.left - containerRect.left + scrollRef.current.scrollLeft) / zoomLevel + (r.width / zoomLevel) / 2,
+        y: (r.top - containerRect.top + scrollRef.current.scrollTop) / zoomLevel + (r.height / zoomLevel) / 2
       };
     }
     return null;
@@ -632,13 +637,20 @@ export default function Board() {
         setHighestZ(nextZ);
         setMemos(prev => prev.map(m => m.id === editingMemo.id ? { ...m, z: nextZ } : m));
         setActiveMemoId(editingMemo.id);
-        
-        if (scrollRef.current) {
-          const targetScrollLeft = (editingMemo.x + 170) * zoomLevel + offsetX - viewportSize.width / 2;
-          const targetScrollTop = (editingMemo.y + 200) * zoomLevel + offsetY - viewportSize.height / 2;
-          scrollRef.current.scrollLeft = targetScrollLeft;
-          scrollRef.current.scrollTop = targetScrollTop;
-        }
+
+        const targetZoom = 1;
+        setZoomLevel(targetZoom);
+
+        setTimeout(() => {
+          if (scrollRef.current) {
+            const newOffsetX = Math.max(0, (viewportSize.width - CANVAS_SIZE * targetZoom) / 2);
+            const newOffsetY = Math.max(0, (viewportSize.height - CANVAS_SIZE * targetZoom) / 2);
+            const targetScrollLeft = (editingMemo.x + 170) * targetZoom + newOffsetX - viewportSize.width / 2;
+            const targetScrollTop = (editingMemo.y + 200) * targetZoom + newOffsetY - viewportSize.height / 2;
+            scrollRef.current.scrollLeft = targetScrollLeft;
+            scrollRef.current.scrollTop = targetScrollTop;
+          }
+        }, 10);
       }
       return;
     }
@@ -654,15 +666,30 @@ export default function Board() {
       newX = (scrollPos.left - offsetX + viewportSize.width / 2) / zoomLevel - 170;
       newY = (scrollPos.top - offsetY + viewportSize.height / 2) / zoomLevel - 200;
     }
-    const newId = Date.now(); 
+    const newId = Date.now();
     const newMemo = {
-      id: newId, title: '', author: lastUsedUser.name, content: '', color: lastUsedUser.color, date: getFormattedDate(),
+      id: newId, title: '', author: lastUsedUser.name, content: '', color: '#ffffff', date: getFormattedDate(),
       x: newX, y: newY, isEditing: true, isExpanded: true,
       z: nextZ
     };
     setMemos([...memos, newMemo]);
     setActiveMemoId(newId);
-    
+
+    if (!isMobile) {
+      const targetZoom = 1;
+      setZoomLevel(targetZoom);
+      setTimeout(() => {
+        if (scrollRef.current) {
+          const newOffsetX = Math.max(0, (viewportSize.width - CANVAS_SIZE * targetZoom) / 2);
+          const newOffsetY = Math.max(0, (viewportSize.height - CANVAS_SIZE * targetZoom) / 2);
+          const targetScrollLeft = (newMemo.x + 170) * targetZoom + newOffsetX - viewportSize.width / 2;
+          const targetScrollTop = (newMemo.y + 200) * targetZoom + newOffsetY - viewportSize.height / 2;
+          scrollRef.current.scrollLeft = targetScrollLeft;
+          scrollRef.current.scrollTop = targetScrollTop;
+        }
+      }, 10);
+    }
+
     if (socketRef.current) {
       socketRef.current.emit('memo:edit-start', { padId, id: newId, username: lastUsedUser.name });
     }
@@ -677,27 +704,26 @@ export default function Board() {
     });
     if (activeMemoId === id) setActiveMemoId(null);
     setDeleteConfirmMemoId(null);
-    
+
     if (socketRef.current) {
       socketRef.current.emit('memo:delete', { padId, id });
     }
   };
 
   const handleDeleteMemo = (id) => {
-    if (deleteConfirmMemoId === id) {
-      setDeletePromptMemoId(id);
-    } else {
-      setDeleteConfirmMemoId(id);
-      setTimeout(() => {
-        setDeleteConfirmMemoId(prev => prev === id ? null : prev);
-      }, 3000);
-    }
+    setDeletePromptMemoId(id);
   };
 
   const handleEditMemo = (id) => {
     handleBringToFront(id);
-    setMemos(prev => prev.map(m => m.id === id ? { ...m, isEditing: true, isExpanded: true } : m));
-    
+    setMemos(prev => {
+      const target = prev.find(m => m.id === id);
+      if (target) {
+        memoBackupsRef.current[id] = { ...target };
+      }
+      return prev.map(m => m.id === id ? { ...m, isEditing: true, isExpanded: true } : m);
+    });
+
     if (socketRef.current) {
       socketRef.current.emit('memo:edit-start', { padId, id, username: lastUsedUser.name });
     }
@@ -738,31 +764,33 @@ export default function Board() {
     const memoComments = comments.filter(c => c.memoId === m.id);
 
     return (
-      <div 
-        onClick={(e) => e.stopPropagation()} 
-        style={{ 
+      <div
+        className="custom-memo-scrollbar"
+        onClick={(e) => e.stopPropagation()}
+        style={{
           padding: '10px',
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
           maxHeight: '350px',
           overflowY: 'auto',
-          flexShrink: 0
+          flexShrink: 0,
+          '--scrollbar-color': m.lineColor || borderColor || textColor
         }}
       >
         {memoComments.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '4px' }}>
             {memoComments.map(comment => (
-              <div 
-                key={comment.id} 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  fontSize: '10px', 
+              <div
+                key={comment.id}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  fontSize: '10px',
                   padding: '4px 6px',
-                  background: 'rgba(0, 0, 0, 0.05)', 
+                  background: 'rgba(0, 0, 0, 0.05)',
                   border: `1px solid ${borderColor}`,
-                  position: 'relative' 
+                  position: 'relative'
                 }}
               >
                 <div style={{ color: m.contentColor || textColor, wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
@@ -772,15 +800,15 @@ export default function Board() {
                   <span style={{ fontSize: '9px', opacity: 0.6, color: m.contentColor || textColor }}>
                     {comment.date}
                   </span>
-                  <button 
+                  <button
                     onClick={() => setDeletePromptCommentId(comment.id)}
-                    style={{ 
-                      background: 'none', 
-                      border: 'none', 
-                      cursor: 'pointer', 
-                      fontSize: '9px', 
-                      color: m.contentColor || textColor, 
-                      opacity: 0.6, 
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '9px',
+                      color: m.contentColor || textColor,
+                      opacity: 0.6,
                       padding: '0 2px',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -797,7 +825,7 @@ export default function Board() {
           </div>
         )}
 
-        <form 
+        <form
           onSubmit={(e) => handleSubmitComment(e, m.id)}
           style={{ display: 'flex', alignItems: 'stretch', gap: '6px', marginTop: '4px' }}
         >
@@ -815,20 +843,20 @@ export default function Board() {
               background: 'rgba(255, 255, 255, 0.7)',
               color: '#000000',
               fontFamily: 'inherit',
-              borderRadius: '0px'
+              borderRadius: '2px'
             }}
           />
           <button
             type="submit"
             style={{
-              padding: '0 8px',
+              padding: '1px 8px',
               fontSize: '10px',
               fontWeight: 'normal',
               border: `1px solid ${borderColor}`,
               background: 'rgba(0, 0, 0, 0.1)',
-              color: textColor,
+              color: m.titleColor || textColor,
               cursor: 'pointer',
-              borderRadius: '0px',
+              borderRadius: '2px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -844,17 +872,81 @@ export default function Board() {
     );
   };
 
+
+  const handleCancelEdit = (m) => {
+    if (m.title === '' && m.content === '') {
+      setMemos(prev => prev.filter(memo => memo.id !== m.id));
+      setLockedMemos(prev => {
+        const next = { ...prev };
+        delete next[m.id];
+        return next;
+      });
+      if (activeMemoId === m.id) setActiveMemoId(null);
+      if (socketRef.current) {
+        socketRef.current.emit('memo:delete', { padId, id: m.id });
+      }
+    } else {
+      setMemos(prev => prev.map(memo => {
+        if (memo.id === m.id) {
+          const backup = memoBackupsRef.current[m.id] || memo;
+          return { ...backup, isEditing: false, isExpanded: true };
+        }
+        return memo;
+      }));
+      setLockedMemos(prev => {
+        const next = { ...prev };
+        delete next[m.id];
+        return next;
+      });
+      if (socketRef.current) {
+        socketRef.current.emit('memo:edit-end', { padId, id: m.id });
+      }
+    }
+    delete memoBackupsRef.current[m.id];
+  };
+
+  const uploadWithProgress = (file, fileType) => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API_BASE}/api/upload`);
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          if (percent === 100) {
+            setUploadProgressLog(`${fileType} processing...`);
+          } else {
+            setUploadProgressLog(`${fileType} uploading: ${percent}%`);
+          }
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(new Error(`서버 응답 오류 (상태 코드: ${xhr.status})`));
+        }
+      };
+      xhr.onerror = () => reject(new Error('네트워크 오류'));
+      const formData = new FormData();
+      if (socketRef.current && socketRef.current.id) {
+        formData.append('socketId', socketRef.current.id);
+      }
+      formData.append('file', file);
+      xhr.send(formData);
+    });
+  };
+
   const handlePublish = async (id, title, author, content, color, audioFile, imageFile) => {
     const now = new Date();
     const dateStr = `${String(now.getFullYear()).slice(-2)}.${now.getMonth() + 1}.${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setLastUsedUser({ name: author, color: color });
-    
+
     let audioUrl = null;
     let audioFileName = null;
     let waveformPeaks = null;
     let imageUrl = null;
     let imageFileName = null;
-    
+
     const currentMemo = memos.find(m => m.id === id);
     if (currentMemo) {
       audioUrl = currentMemo.audioUrl;
@@ -863,50 +955,37 @@ export default function Board() {
       imageUrl = currentMemo.imageUrl;
       imageFileName = currentMemo.imageFileName;
     }
-    
+
     if (audioFile) {
-      const formData = new FormData();
-      formData.append('file', audioFile);
+      setUploadProgressLog('sound uploading: 0%');
       try {
-        const res = await fetch(`${API_BASE}/api/upload`, {
-          method: 'POST',
-          body: formData
-        });
-        if (!res.ok) {
-          throw new Error(`서버 응답 오류 (상태 코드: ${res.status})`);
-        }
-        const uploadData = await res.json();
+        const uploadData = await uploadWithProgress(audioFile, 'sound');
         audioUrl = uploadData.fileUrl;
         audioFileName = uploadData.originalName;
         waveformPeaks = uploadData.waveformPeaks;
       } catch (err) {
         console.error('Audio upload failed:', err);
+        setUploadProgressLog('');
         alert(`소리 파일 업로드에 실패했습니다: ${err.message || err}`);
         return;
       }
     }
-    
+
     if (imageFile) {
-      const formData = new FormData();
-      formData.append('file', imageFile);
+      setUploadProgressLog('scene uploading: 0%');
       try {
-        const res = await fetch(`${API_BASE}/api/upload`, {
-          method: 'POST',
-          body: formData
-        });
-        if (!res.ok) {
-          throw new Error(`서버 응답 오류 (상태 코드: ${res.status})`);
-        }
-        const uploadData = await res.json();
+        const uploadData = await uploadWithProgress(imageFile, 'scene');
         imageUrl = uploadData.fileUrl;
         imageFileName = uploadData.originalName;
       } catch (err) {
         console.error('Image upload failed:', err);
+        setUploadProgressLog('');
         alert(`이미지 파일 업로드에 실패했습니다: ${err.message || err}`);
         return;
       }
     }
 
+    setUploadProgressLog('');
     const updatedMemo = {
       ...currentMemo,
       title,
@@ -922,14 +1001,14 @@ export default function Board() {
       imageUrl,
       imageFileName
     };
-    
+
     setMemos(prev => prev.map(m => m.id === id ? updatedMemo : m));
     setLockedMemos(prev => {
       const next = { ...prev };
       delete next[id];
       return next;
     });
-    
+
     if (socketRef.current) {
       socketRef.current.emit('memo:publish', { padId, memo: updatedMemo });
     }
@@ -986,25 +1065,17 @@ export default function Board() {
           </div>
           <div className="mobile-board-header-row">
             <div className="mobile-author-picker-wrapper" style={{ border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}`, height: '30px', boxSizing: 'border-box' }}>
-              <input 
-                className="square-color-picker"
-                type="color" 
-                value={lastUsedUser.color} 
-                onChange={(e) => handleUserChange({ ...lastUsedUser, color: e.target.value })} 
-                style={{ width: '20px', height: '20px', flexShrink: 0 }}
-                title="작성자 색상"
-              />
-              <input 
-                type="text" 
-                value={lastUsedUser.name} 
-                onChange={(e) => handleUserChange({ ...lastUsedUser, name: e.target.value })} 
+              <input
+                type="text"
+                value={lastUsedUser.name}
+                onChange={(e) => handleUserChange({ ...lastUsedUser, name: e.target.value })}
                 onFocus={(e) => { if (e.target.value === 'name') handleUserChange({ ...lastUsedUser, name: '' }); }}
-                placeholder="작성자 이름"
+                placeholder="name"
                 className="mobile-author-input"
               />
             </div>
-            <button 
-              className={`mobile-write-btn ${isWriting ? 'active' : ''}`} 
+            <button
+              className={`mobile-write-btn ${isWriting ? 'active' : ''}`}
               onClick={handleWriteNew}
               style={{
                 background: getContrastColor(outerBgColor || '#E0E0D0'),
@@ -1017,7 +1088,7 @@ export default function Board() {
                 justifyContent: 'center'
               }}
             >
-              쓰기
+              write
             </button>
           </div>
         </header>
@@ -1052,26 +1123,14 @@ export default function Board() {
             const isLocked = lockedMemos[m.id] && lockedMemos[m.id] !== lastUsedUser.name;
 
             return (
-              <div 
+              <div
                 id={`memo-${m.id}`}
                 key={m.id}
                 className="mobile-memo-card"
-                style={{ '--memo-bg': m.color, backgroundColor: m.color, cursor: 'pointer' }}
-                onClick={(e) => {
-                  if (
-                    e.target.tagName === 'BUTTON' || 
-                    e.target.tagName === 'INPUT' || 
-                    e.target.tagName === 'TEXTAREA' || 
-                    e.target.closest('form') ||
-                    e.target.closest('.mobile-memo-actions')
-                  ) {
-                    return;
-                  }
-                  setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo));
-                }}
+                style={{ '--memo-bg': m.color, backgroundColor: m.color, cursor: 'default', border: `1px solid ${m.lineColor || '#000000'}`, boxShadow: `2px 2px 0px ${m.lineColor || 'rgba(0,0,0,1)'}` }}
               >
                 {/* 카드 헤더 */}
-                <div className="mobile-memo-header">
+                <div className="mobile-memo-header" style={{ borderBottom: `1px solid ${m.lineColor || '#000000'}` }}>
                   <div className="mobile-memo-author-info">
                     {m.author && (
                       <span className="mobile-memo-author" style={{ color: m.titleColor || textColor }}>
@@ -1084,7 +1143,7 @@ export default function Board() {
                   </div>
                   <div>
                     {m.isEditing ? (
-                      <button 
+                      <button
                         className="mobile-memo-toggle-btn"
                         onClick={() => {
                           if (m.title === '' && m.content === '') {
@@ -1113,68 +1172,55 @@ export default function Board() {
                       >
                         X
                       </button>
-                    ) : (
-                      <button 
-                        className="mobile-memo-toggle-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo));
-                        }}
-                      >
-                        {m.isExpanded ? '▲' : '▼'}
-                      </button>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
                 {/* 카드 본문 / 수정 폼 */}
                 <div className="mobile-memo-body">
                   {m.isEditing ? (
-                    <form 
+                    <form
                       onSubmit={e => {
                         e.preventDefault();
                         handlePublish(m.id, e.target.t.value, m.author, e.target.c.value, m.color, e.target.audioFile.files[0], e.target.imageFile.files[0]);
                       }}
                       className="mobile-edit-form"
                     >
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '12px', color: textColor }}>colors_</span>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                          <span style={{ fontWeight: 'normal' }}>bg</span>
+                          <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.color || '#ffffff'} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, color: e.target.value } : memo))} />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                          <span style={{ fontWeight: 'normal' }}>border</span>
+                          <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.lineColor || '#000000'} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, lineColor: e.target.value } : memo))} />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                          <span style={{ fontWeight: 'normal' }}>font</span>
+                          <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.titleColor || m.contentColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, titleColor: e.target.value, contentColor: e.target.value } : memo))} />
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                          <span style={{ fontWeight: 'normal' }}>wave</span>
+                          <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.waveformColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, waveformColor: e.target.value } : memo))} />
+                        </label>
+                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input 
-                          name="t" 
-                          placeholder="제목" 
-                          defaultValue={m.title} 
-                          required 
+                        <input
+                          name="t"
+                          placeholder="title"
+                          defaultValue={m.title}
+                          required
                           className="mobile-edit-input-title"
-                          style={{ color: m.titleColor || textColor, borderBottomColor: borderColor }} 
-                        />
-                        <input 
-                          className="square-color-picker"
-                          type="color" 
-                          style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                          value={m.titleColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                          onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, titleColor: e.target.value } : memo))}
-                          title="제목 색상 변경"
+                          style={{ color: m.titleColor || textColor, borderBottomColor: borderColor }}
                         />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingBottom: '10px' }}>
                         <div className="mobile-edit-file-row">
-                          <label className="file-upload-label" style={{ 
-                            color: textColor, 
-                            flex: 1, 
-                            border: `1px solid ${borderColor}`,
-                            height: '32px',
-                            boxSizing: 'border-box',
-                            padding: '0 12px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.1)',
-                            borderRadius: '0px',
-                            fontSize: '14px',
-                            cursor: 'pointer'
-                          }}>
-                            <span>소리</span>
-                            <input name="audioFile" id={`audio-input-${m.id}`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf" 
+                          <label className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                            <span>sound</span>
+                            <input name="audioFile" id={`audio-input-${m.id}`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf"
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
@@ -1182,85 +1228,57 @@ export default function Board() {
                                   setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: url, audioFileName: file.name } : memo));
                                 }
                               }}
-                              style={{ display: 'none' }} 
+                              style={{ display: 'none' }}
                             />
                           </label>
                         </div>
 
-                        {m.audioUrl && (
-                          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '4px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '4px' }}>
+                          {m.audioUrl && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                              <span style={{ fontSize: '11px', color: textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'bold' }}>
+                              <span style={{ fontSize: '11px', color: m.titleColor || textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'normal' }}>
                                 {m.audioFileName}
                               </span>
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: null, audioFileName: null } : memo));
                                   const input = document.getElementById(`audio-input-${m.id}`);
                                   if (input) input.value = '';
                                 }}
-                                className="file-upload-label"
-                                style={{ 
-                                  padding: '0 8px', 
-                                  height: '24px', 
-                                  color: textColor, 
-                                  border: `1px solid ${borderColor}`,
-                                  cursor: 'pointer',
-                                  background: 'rgba(0,0,0,0.1)',
-                                  fontSize: '10px',
-                                  fontWeight: 'bold',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0
-                                }}
+                                className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                               >
                                 delete
                               </button>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
-                              </div>
-                              <input 
-                                className="square-color-picker"
-                                type="color" 
-                                style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                                value={m.waveformColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                                onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, waveformColor: e.target.value } : memo))}
-                                title="파장 색상 변경"
-                              />
+                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={m.titleColor || m.contentColor || textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                             </div>
                           </div>
-                        )}
+                        </div>
 
                         <div className="mobile-edit-file-row">
-                          <label className="file-upload-label" style={{ 
-                            color: textColor, 
-                            flex: 1, 
-                            border: `1px solid ${borderColor}`,
-                            height: '32px',
-                            boxSizing: 'border-box',
-                            padding: '0 12px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.1)',
-                            borderRadius: '0px',
-                            fontSize: '14px',
-                            cursor: 'pointer'
-                          }}>
-                            <span>장면</span>
-                            <input name="imageFile" id={`image-input-${m.id}`} type="file" accept="image/*" 
+                          <label className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                            <span>scene</span>
+                            <input name="imageFile" id={`image-input-${m.id}`} type="file" accept="image/*, .heic, .heif"
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
-                                  const url = URL.createObjectURL(file);
-                                  setMemos(memos.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                                  const ext = file.name.toLowerCase();
+                                  if (ext.endsWith('.heic') || ext.endsWith('.heif')) {
+                                    heic2any({ blob: file, toType: 'image/jpeg' }).then(convertedBlob => {
+                                      const url = URL.createObjectURL(convertedBlob);
+                                      setMemos(prev => prev.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                                    }).catch(console.error);
+                                  } else {
+                                    const url = URL.createObjectURL(file);
+                                    setMemos(prev => prev.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                                  }
                                 }
                               }}
-                              style={{ display: 'none' }} 
+                              style={{ display: 'none' }}
                             />
                           </label>
                         </div>
@@ -1268,29 +1286,15 @@ export default function Board() {
                         {m.imageUrl && (
                           <div className="mobile-memo-image-container" style={{ alignItems: 'flex-start' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                              <span className="mobile-memo-image-name" style={{ color: textColor, flex: 1, fontWeight: 'bold' }}>{m.imageFileName}</span>
-                              <button 
-                                type="button" 
+                              <span className="mobile-memo-image-name" style={{ color: m.titleColor || textColor, flex: 1, fontWeight: 'normal' }}>{m.imageFileName}</span>
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setMemos(memos.map(memo => memo.id === m.id ? { ...memo, imageUrl: null, imageFileName: null } : memo));
                                   const input = document.getElementById(`image-input-${m.id}`);
                                   if (input) input.value = '';
                                 }}
-                                className="file-upload-label"
-                                style={{ 
-                                  padding: '0 8px', 
-                                  height: '24px', 
-                                  color: textColor, 
-                                  border: `1px solid ${borderColor}`,
-                                  cursor: 'pointer',
-                                  background: 'rgba(0,0,0,0.1)',
-                                  fontSize: '10px',
-                                  fontWeight: 'bold',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0
-                                }}
+                                className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                               >
                                 delete
                               </button>
@@ -1300,73 +1304,50 @@ export default function Board() {
                         )}
                       </div>
 
-                      <textarea 
-                        name="c" 
-                        placeholder="내용..." 
-                        defaultValue={m.content} 
-                        required 
-                        className="mobile-edit-textarea"
-                        style={{ color: m.contentColor || textColor, borderColor: borderColor }} 
+                      <textarea
+                        name="c"
+                        placeholder="content"
+                        defaultValue={m.content}
+                        required
+                        className="mobile-edit-textarea custom-memo-scrollbar"
+                        style={{ color: m.contentColor || textColor, borderColor: borderColor, '--scrollbar-color': m.lineColor || borderColor || textColor }}
                       />
 
-                      <div className="mobile-edit-footer">
-                        <input 
-                          className="square-color-picker"
-                          type="color" 
-                          style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                          value={m.contentColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                          onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, contentColor: e.target.value } : memo))}
-                          title="내용 폰트 색상 변경"
-                        />
-                        <button type="submit" className="mobile-edit-submit-btn" style={{
-                          color: textColor,
-                          border: `1px solid ${borderColor}`,
-                          height: '32px',
-                          boxSizing: 'border-box',
-                          padding: '0 20px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'rgba(0,0,0,0.1)',
-                          borderRadius: '0px',
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          fontWeight: 'bold',
-                          boxShadow: 'none',
-                          transform: 'none'
-                        }}>
-                          {(m.title === '' && m.content === '') ? '쓰기' : '완료'}
+                      <div className="mobile-edit-footer" style={{ justifyContent: 'flex-end' }}>
+                        <button type="button" onClick={() => handleCancelEdit(m)} className="mobile-edit-submit-btn" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
+                        <button type="submit" className="mobile-edit-submit-btn" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                          'done'
                         </button>
                       </div>
                     </form>
                   ) : (
                     <>
                       <div className="mobile-memo-title" style={{ color: m.titleColor || textColor }}>{m.title}</div>
-                      
+
                       {m.audioUrl && (
                         <div style={{ margin: '4px 0' }} onClick={(e) => e.stopPropagation()}>
-                          <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                          <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={m.titleColor || m.contentColor || textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                         </div>
                       )}
 
                       {m.imageUrl && (
                         <div className="mobile-memo-image-container">
-                          <span className="mobile-memo-image-name" style={{ color: textColor }}>{m.imageFileName}</span>
+                          <span className="mobile-memo-image-name" style={{ color: m.titleColor || textColor }}>{m.imageFileName}</span>
                           <img src={getResolvedImageUrl(m.imageUrl)} alt="Uploaded" className="mobile-memo-image" style={{ border: 'none' }} />
                         </div>
                       )}
 
-                      {m.isExpanded && m.content && (
+                      {m.content && (
                         <div className="mobile-memo-content" style={{ color: m.contentColor || textColor, paddingTop: '10px', marginTop: '4px' }}>
                           {m.content}
                         </div>
                       )}
 
                       <div className="mobile-memo-actions" onClick={(e) => e.stopPropagation()}>
-                        <button 
+                        <button
                           className="mobile-action-btn"
                           onClick={() => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo))}
-                          style={{ color: textColor, fontWeight: 'normal' }}
+                          style={{ color: m.titleColor || textColor, fontWeight: 'normal' }}
                         >
                           comments ({comments.filter(c => c.memoId === m.id).length})
                         </button>
@@ -1378,13 +1359,13 @@ export default function Board() {
                             </span>
                           ) : (
                             <>
-                              <button className="mobile-action-btn" onClick={() => handleEditMemo(m.id)} style={{ color: textColor }}>edit</button>
-                              <button 
-                                className={`mobile-action-btn ${deleteConfirmMemoId === m.id ? `mobile-delete-confirm-btn ${isReddish(m.color) ? 'red-bg-confirm' : ''}` : ''}`}
-                                onClick={() => handleDeleteMemo(m.id)} 
-                                style={{ color: deleteConfirmMemoId === m.id ? '#fff' : textColor }}
+                              <button className="mobile-action-btn" onClick={() => handleEditMemo(m.id)} style={{ color: m.titleColor || textColor }}>edit</button>
+                              <button
+                                className="mobile-action-btn"
+                                onClick={() => handleDeleteMemo(m.id)}
+                                style={{ color: m.titleColor || textColor }}
                               >
-                                {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
+                                delete
                               </button>
                             </>
                           )}
@@ -1409,7 +1390,7 @@ export default function Board() {
     const borderColor = textColor === "#ffffff" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
 
     return (
-      <div 
+      <div
         className="mobile-edit-backdrop"
         style={{
           position: 'fixed',
@@ -1429,12 +1410,13 @@ export default function Board() {
         }}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <div 
+        <div
           className="mobile-edit-modal-card"
           style={{
+            borderRadius: '2px',
             backgroundColor: m.color,
-            border: '1px solid #000000',
-            boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+            border: `1px solid ${m.lineColor || '#000000'}`,
+            boxShadow: `2px 2px 0px ${m.lineColor || 'rgba(0,0,0,1)'}`,
             transform: 'translate(-1px, -1px)',
             width: '100%',
             maxWidth: '450px',
@@ -1460,7 +1442,7 @@ export default function Board() {
             <span style={{ fontSize: '12px', fontFamily: 'monospace', opacity: 0.8 }}>
               {m.date || getFormattedDate()}
             </span>
-            <button 
+            <button
               type="button"
               onClick={() => {
                 if (m.title === '' && m.content === '') {
@@ -1501,7 +1483,7 @@ export default function Board() {
           </header>
 
           {/* Form Body */}
-          <form 
+          <form
             onSubmit={e => {
               e.preventDefault();
               handlePublish(m.id, e.target.t.value, m.author, e.target.c.value, m.color, e.target.audioFile.files[0], e.target.imageFile.files[0]);
@@ -1518,13 +1500,32 @@ export default function Board() {
               minHeight: 0
             }}
           >
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <span style={{ fontWeight: 'bold', fontSize: '12px', color: textColor }}>colors_</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                <span style={{ fontWeight: 'normal' }}>bg</span>
+                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.color || '#ffffff'} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, color: e.target.value } : memo))} />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                <span style={{ fontWeight: 'normal' }}>border</span>
+                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.lineColor || '#000000'} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, lineColor: e.target.value } : memo))} />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                <span style={{ fontWeight: 'normal' }}>font</span>
+                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.titleColor || m.contentColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, titleColor: e.target.value, contentColor: e.target.value } : memo))} />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                <span style={{ fontWeight: 'normal' }}>wave</span>
+                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.waveformColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, waveformColor: e.target.value } : memo))} />
+              </label>
+            </div>
             {/* Title Row */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-              <input 
-                name="t" 
-                placeholder="제목을 입력하세요" 
-                defaultValue={m.title} 
-                required 
+              <input
+                name="t"
+                placeholder="title"
+                defaultValue={m.title}
+                required
                 style={{
                   flex: 1,
                   border: 'none',
@@ -1535,15 +1536,7 @@ export default function Board() {
                   fontWeight: 'bold',
                   outline: 'none',
                   paddingBottom: '4px'
-                }} 
-              />
-              <input 
-                className="square-color-picker"
-                type="color" 
-                style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                value={m.titleColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, titleColor: e.target.value } : memo))}
-                title="제목 색상 변경"
+                }}
               />
             </div>
 
@@ -1551,23 +1544,9 @@ export default function Board() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>
               {/* Audio Upload */}
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <label className="file-upload-label" style={{ 
-                  color: textColor, 
-                  border: `1px solid ${borderColor}`, 
-                  height: '32px', 
-                  boxSizing: 'border-box',
-                  fontSize: '14px', 
-                  padding: '0 12px', 
-                  width: 'fit-content', 
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(0,0,0,0.1)',
-                  borderRadius: '0px',
-                  cursor: 'pointer'
-                }}>
-                  <span>소리</span>
-                  <input name="audioFile" id={`audio-input-${m.id}-modal`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf" 
+                <label className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                  <span>sound</span>
+                  <input name="audioFile" id={`audio-input-${m.id}-modal`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
@@ -1575,86 +1554,58 @@ export default function Board() {
                         setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: url, audioFileName: file.name } : memo));
                       }
                     }}
-                    style={{ display: 'none' }} 
+                    style={{ display: 'none' }}
                   />
                 </label>
               </div>
 
-              {m.audioUrl && (
-                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '4px' }}>
+                {m.audioUrl && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11px', color: textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '11px', color: m.titleColor || textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'normal' }}>
                       {m.audioFileName}
                     </span>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => {
                         setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: null, audioFileName: null } : memo));
                         const input = document.getElementById(`audio-input-${m.id}-modal`);
                         if (input) input.value = '';
                       }}
-                      className="file-upload-label"
-                      style={{ 
-                        padding: '0 8px', 
-                        height: '24px', 
-                        color: textColor, 
-                        border: `1px solid ${borderColor}`,
-                        cursor: 'pointer',
-                        background: 'rgba(0,0,0,0.1)',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}
+                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                     >
                       삭제
                     </button>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
-                    </div>
-                    <input 
-                      className="square-color-picker"
-                      type="color" 
-                      style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                      value={m.waveformColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                      onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, waveformColor: e.target.value } : memo))}
-                      title="파장 색상 변경"
-                    />
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={m.titleColor || m.contentColor || textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Image Upload */}
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <label className="file-upload-label" style={{ 
-                  color: textColor, 
-                  border: `1px solid ${borderColor}`, 
-                  height: '32px', 
-                  boxSizing: 'border-box',
-                  fontSize: '14px', 
-                  padding: '0 12px', 
-                  width: 'fit-content', 
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(0,0,0,0.1)',
-                  borderRadius: '0px',
-                  cursor: 'pointer'
-                }}>
-                  <span>장면</span>
-                  <input name="imageFile" id={`image-input-${m.id}-modal`} type="file" accept="image/*" 
+                <label className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                  <span>scene</span>
+                  <input name="imageFile" id={`image-input-${m.id}-modal`} type="file" accept="image/*, .heic, .heif"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
-                        const url = URL.createObjectURL(file);
-                        setMemos(memos.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                        const ext = file.name.toLowerCase();
+                        if (ext.endsWith('.heic') || ext.endsWith('.heif')) {
+                          heic2any({ blob: file, toType: 'image/jpeg' }).then(convertedBlob => {
+                            const url = URL.createObjectURL(convertedBlob);
+                            setMemos(prev => prev.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                          }).catch(console.error);
+                        } else {
+                          const url = URL.createObjectURL(file);
+                          setMemos(prev => prev.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                        }
                       }
                     }}
-                    style={{ display: 'none' }} 
+                    style={{ display: 'none' }}
                   />
                 </label>
               </div>
@@ -1662,29 +1613,15 @@ export default function Board() {
               {m.imageUrl && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11px', color: textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'bold' }}>{m.imageFileName}</span>
-                    <button 
-                      type="button" 
+                    <span style={{ fontSize: '11px', color: m.titleColor || textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'normal' }}>{m.imageFileName}</span>
+                    <button
+                      type="button"
                       onClick={() => {
                         setMemos(memos.map(memo => memo.id === m.id ? { ...memo, imageUrl: null, imageFileName: null } : memo));
                         const input = document.getElementById(`image-input-${m.id}-modal`);
                         if (input) input.value = '';
                       }}
-                      className="file-upload-label"
-                      style={{ 
-                        padding: '0 8px', 
-                        height: '24px', 
-                        color: textColor, 
-                        border: `1px solid ${borderColor}`,
-                        cursor: 'pointer',
-                        background: 'rgba(0,0,0,0.1)',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}
+                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
                     >
                       삭제
                     </button>
@@ -1695,12 +1632,14 @@ export default function Board() {
             </div>
 
             {/* Content Field */}
-            <textarea 
-              name="c" 
-              placeholder="내용을 입력하세요..." 
-              defaultValue={m.content} 
-              required 
+            <textarea
+              name="c"
+              placeholder="content"
+              defaultValue={m.content}
+              required
+              className="custom-memo-scrollbar"
               style={{
+                '--scrollbar-color': m.lineColor || borderColor || textColor,
                 flex: 1,
                 width: '100%',
                 minHeight: '150px',
@@ -1713,45 +1652,22 @@ export default function Board() {
                 boxSizing: 'border-box',
                 resize: 'none',
                 outline: 'none'
-              }} 
+              }}
             />
 
             {/* Footer controls */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
               marginTop: '4px',
               flexShrink: 0
             }}>
-              <input 
-                className="square-color-picker"
-                type="color" 
-                style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                value={m.contentColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, contentColor: e.target.value } : memo))}
-                title="내용 폰트 색상 변경"
-              />
-              <button 
-                type="submit" 
-                className="file-upload-label"
-                style={{
-                  color: textColor,
-                  border: `1px solid ${borderColor}`,
-                  height: '32px',
-                  boxSizing: 'border-box',
-                  fontSize: '14px',
-                  padding: '0 20px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'rgba(0,0,0,0.1)',
-                  borderRadius: '0px'
-                }}
-              >
-                완료
+              <button type="button" onClick={() => handleCancelEdit(m)} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
+              <button
+                type="submit"
+                className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                done
               </button>
             </div>
           </form>
@@ -1787,19 +1703,19 @@ export default function Board() {
           const containerRect = scrollRef.current.getBoundingClientRect();
           const cursorX = (e.clientX - containerRect.left + scrollRef.current.scrollLeft - offsetX) / zoomLevel;
           const cursorY = (e.clientY - containerRect.top + scrollRef.current.scrollTop - offsetY) / zoomLevel;
-          
+
           if (draggingMemo) {
             let newX = cursorX - draggingMemo.ox;
             let newY = cursorY - draggingMemo.oy;
             newX = Math.max(0, Math.min(newX, CANVAS_SIZE - 200));
             newY = Math.max(0, Math.min(newY, CANVAS_SIZE - 100));
             setMemos(memos.map(m => m.id === draggingMemo.id ? { ...m, x: newX, y: newY } : m));
-            
+
             if (socketRef.current) {
               socketRef.current.emit('memo:move', { padId, id: draggingMemo.id, x: newX, y: newY });
             }
           }
-          
+
           if (socketRef.current) {
             const now = Date.now();
             if (now - lastCursorEmit.current > 40) {
@@ -1816,7 +1732,7 @@ export default function Board() {
         setDraggingMemo(null);
         setIsDraggingMinimap(false);
       }}
-      onPointerDown={() => setActiveMemoId(null)} 
+      onPointerDown={() => setActiveMemoId(null)}
     >
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -1845,19 +1761,19 @@ export default function Board() {
       `}</style>
 
       {/* 좌측 상단: 원형 제목/날짜 패널 */}
-      <div 
-        onPointerDown={(e) => e.stopPropagation()} 
+      <div
+        onPointerDown={(e) => e.stopPropagation()}
         onClick={() => handleZoomChange(minZoom)}
         className="info-circle"
-        style={{ 
+        style={{
           transform: `scale(${uiScale})`, transformOrigin: 'top left', position: 'fixed', top: '20px', left: '20px', width: '150px', height: '150px',
           borderRadius: '50%', background: 'white', border: 'none',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           zIndex: 2000, padding: '10px',
           textAlign: 'center', wordBreak: 'keep-all', overflowWrap: 'break-word', pointerEvents: 'auto', cursor: 'pointer'
-      }}>
+        }}>
         <div className="title-wrapper">
-          <strong 
+          <strong
             className="title-text"
             style={{ color: padTitleColor || 'inherit' }}
           >
@@ -1869,13 +1785,13 @@ export default function Board() {
 
       {/* 중앙 상단: 작성자 설정 및 리소스 카운트 통합 패널 */}
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', top: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'top center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          padding: '10px 12px 8px 12px', 
-          width: '250px', 
-          boxSizing: 'border-box', 
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: '10px 12px 8px 12px',
+          width: '250px',
+          boxSizing: 'border-box',
           gap: '8px',
           border: '1px solid',
           borderTopColor: '#ffffff',
@@ -1887,18 +1803,18 @@ export default function Board() {
         }}>
           {/* Row 1: 인풋 필드 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%' }}>
-            <input 
+            <input
               className="square-color-picker"
-              type="color" 
-              value={lastUsedUser.color} 
-              onChange={(e) => handleUserChange({ ...lastUsedUser, color: e.target.value })} 
+              type="color"
+              value={lastUsedUser.color}
+              onChange={(e) => handleUserChange({ ...lastUsedUser, color: e.target.value })}
               title="작성자 색상"
-              style={{ width: '24px', height: '24px', flexShrink: 0 }}
+              style={{ width: '24px', height: '24px', flexShrink: 0, border: `1px solid ${getContrastColor(outerBgColor || '#E0E0D0')}` }}
             />
-            <input 
-              type="text" 
-              value={lastUsedUser.name} 
-              onChange={(e) => handleUserChange({ ...lastUsedUser, name: e.target.value })} 
+            <input
+              type="text"
+              value={lastUsedUser.name}
+              onChange={(e) => handleUserChange({ ...lastUsedUser, name: e.target.value })}
               onFocus={(e) => { if (e.target.value === 'name') handleUserChange({ ...lastUsedUser, name: '' }); }}
               placeholder="작성자 이름"
               style={{ padding: '4px 8px', fontSize: '18px', fontWeight: 'normal', border: '1px solid #ccc', width: '160px', outline: 'none', fontFamily: 'inherit' }}
@@ -1926,34 +1842,34 @@ export default function Board() {
       {activeMemoId && memos.find(m => m.id === activeMemoId) && (() => {
         const activeMemo = memos.find(m => m.id === activeMemoId);
         return (
-          <div 
+          <div
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => handleZoomChange(1.5, true)}
             className="info-circle"
             style={{
-            position: 'fixed', bottom: '20px', left: '20px',
-            transform: `scale(${uiScale})`, transformOrigin: 'bottom left', 
-            width: '150px', height: '150px', borderRadius: '50%',
-            background: activeMemo.color || 'white', border: 'none', 
-            zIndex: 3000, pointerEvents: 'auto', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            textAlign: 'center', padding: '10px', wordBreak: 'keep-all', overflowWrap: 'break-word', gap: '6px',
-            color: activeMemo.titleColor || getContrastColor(activeMemo.color || 'white')
-          }}>
-            <strong style={{ fontSize: '20px', color: 'inherit' }}>{activeMemo.title || (activeMemo.isEditing ? '(작성중...)' : '(제목 없음)')}</strong>
+              position: 'fixed', bottom: '20px', left: '20px',
+              transform: `scale(${uiScale})`, transformOrigin: 'bottom left',
+              width: '150px', height: '150px', borderRadius: '50%',
+              background: activeMemo.color || 'white', border: 'none',
+              zIndex: 3000, pointerEvents: 'auto', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              textAlign: 'center', padding: '10px', wordBreak: 'keep-all', overflowWrap: 'break-word', gap: '6px',
+              color: activeMemo.titleColor || getContrastColor(activeMemo.color || 'white')
+            }}>
+            <strong style={{ fontSize: '20px', color: 'inherit' }}>{activeMemo.title || (activeMemo.isEditing ? '(writing...)' : '(no title)')}</strong>
             <span style={{ fontSize: '16px', color: 'inherit', opacity: 0.8 }}>{activeMemo.author}</span>
           </div>
         );
       })()}
 
-      <div 
+      <div
         ref={scrollRefCallback}
         onScroll={handleScroll}
-        className="hide-scrollbar" 
+        className="hide-scrollbar"
         style={{ flex: 1, overflow: 'auto', position: 'relative' }}
       >
-        <div style={{ 
-          width: Math.max(CANVAS_SIZE * zoomLevel, viewportSize.width), 
+        <div style={{
+          width: Math.max(CANVAS_SIZE * zoomLevel, viewportSize.width),
           height: Math.max(CANVAS_SIZE * zoomLevel, viewportSize.height),
           position: 'relative'
         }}>
@@ -1966,444 +1882,346 @@ export default function Board() {
             overflow: 'hidden'
           }}>
             <main style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, position: 'relative', transform: `scale(${zoomLevel})`, transformOrigin: 'top left', backgroundColor: canvasBgColor }}>
-          <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }}>
-            {memos.map(m => {
-              if (!isMemoVisible(m)) return null;
-              const parentMemo = m.parentId ? memos.find(p => p.id === m.parentId) : null;
-              if (parentMemo && !isMemoVisible(parentMemo)) return null;
-              
-              const start = m.parentId && getWordPosition(m.parentId, m.sourceInfo.text);
-              return start && <line key={m.id} x1={start.x} y1={start.y} x2={m.x} y2={m.y} stroke="#999" strokeWidth="1" />;
-            })}
-          </svg>
+              <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10 }}>
+                {memos.map(m => {
+                  if (!isMemoVisible(m)) return null;
+                  const parentMemo = m.parentId ? memos.find(p => p.id === m.parentId) : null;
+                  if (parentMemo && !isMemoVisible(parentMemo)) return null;
 
-          {/* Cursors of other users */}
-          {Object.entries(cursors).map(([socketId, cursor]) => {
-            if (!cursor) return null;
-            return (
-              <div
-                key={socketId}
-                style={{
-                  position: 'absolute',
-                  left: cursor.x,
-                  top: cursor.y,
-                  pointerEvents: 'none',
-                  zIndex: 9999,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start'
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.5))' }}>
-                  <path d="M4.5 3V17.5L9.2 13.5L14.2 21L17.5 19L12.5 11.5L18.5 11L4.5 3Z" fill={cursor.user.color || '#ff0000'} stroke="white" strokeWidth="1.5" />
-                </svg>
-                <span style={{
-                  backgroundColor: cursor.user.color || '#ff0000',
-                  color: getContrastColor(cursor.user.color || '#ff0000'),
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  padding: '2px 6px',
-                  borderRadius: '3px',
-                  marginLeft: '8px',
-                  marginTop: '-4px',
-                  whiteSpace: 'nowrap',
-                  boxShadow: '1px 1px 2px rgba(0,0,0,0.3)'
-                }}>
-                  {cursor.user.name || 'Anonymous'}
-                </span>
-              </div>
-            );
-          })}
+                  const start = m.parentId && getWordPosition(m.parentId, m.sourceInfo.text);
+                  return start && <line key={m.id} x1={start.x} y1={start.y} x2={m.x} y2={m.y} stroke="#999" strokeWidth="1" />;
+                })}
+              </svg>
 
-          {memos.map(m => {
-            if (!isMemoVisible(m)) return null;
-
-            const textColor = getContrastColor(m.color);
-            const borderColor = textColor === "#ffffff" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
-            const isLocked = lockedMemos[m.id] && lockedMemos[m.id] !== lastUsedUser.name;
-
-            return (
-            <div 
-              id={`memo-${m.id}`}
-              key={m.id} 
-              onPointerDown={(e) => {
-                e.stopPropagation(); 
-                handleBringToFront(m.id);
-              }}
-              style={{ 
-                position: 'absolute', left: m.x, top: m.y, border: '1px solid black', background: m.color, 
-                
-                width: '340px', 
-                minWidth: '340px', 
-                maxWidth: '340px', 
-                
-                height: m.isEditing ? 'auto' : (m.isExpanded ? undefined : 'auto'),
-                minHeight: m.isEditing ? '400px' : (m.isExpanded ? '300px' : 'auto'),
-                maxHeight: m.isExpanded ? '1000px' : 'max-content', 
-                
-                padding: '0', 
-                zIndex: activeMemoId === m.id ? 9999 : (m.z || (m.isExpanded ? 100 : 1)), 
-                boxShadow: '2px 2px 0px rgba(0,0,0,1)', display: 'flex', flexDirection: 'column',
-                resize: 'none', 
-                overflow: 'hidden'
-              }}
-            >
-              <div 
-                onPointerDown={e => {
-                  if (e.target.tagName !== 'BUTTON' && scrollRef.current && !isLocked) {
-                    const containerRect = scrollRef.current.getBoundingClientRect();
-                    const canvasX = (e.clientX - containerRect.left + scrollRef.current.scrollLeft - offsetX) / zoomLevel;
-                    const canvasY = (e.clientY - containerRect.top + scrollRef.current.scrollTop - offsetY) / zoomLevel;
-                    setDraggingMemo({ id: m.id, ox: canvasX - m.x, oy: canvasY - m.y });
-                  }
-                }}
-                style={{ 
-                  height: '24px', borderBottom: '1px solid black', display: 'flex', 
-                  alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', 
-                  cursor: isLocked ? 'not-allowed' : 'grab', backgroundColor: 'rgba(0, 0, 0, 0.26)', flexShrink: 0 
-                }}
-              >
-                <div style={{ display: 'flex', flex: 1, alignItems: 'center', minWidth: 0 }}>
-                  {m.author && (
-                    <span style={{ fontSize: '14px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {m.author} {isLocked && `(editing: ${lockedMemos[m.id]})`}
+              {/* Cursors of other users */}
+              {Object.entries(cursors).map(([socketId, cursor]) => {
+                if (!cursor) return null;
+                return (
+                  <div
+                    key={socketId}
+                    style={{
+                      position: 'absolute',
+                      left: cursor.x,
+                      top: cursor.y,
+                      pointerEvents: 'none',
+                      zIndex: 9999,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start'
+                    }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.5))' }}>
+                      <path d="M4.5 3V17.5L9.2 13.5L14.2 21L17.5 19L12.5 11.5L18.5 11L4.5 3Z" fill={cursor.user.color || '#ff0000'} stroke="white" strokeWidth="1.5" />
+                    </svg>
+                    <span style={{
+                      backgroundColor: cursor.user.color || '#ff0000',
+                      color: getContrastColor(cursor.user.color || '#ff0000'),
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      marginLeft: '8px',
+                      marginTop: '-4px',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+                    }}>
+                      {cursor.user.name || 'Anonymous'}
                     </span>
-                  )}
-                  <span style={{ fontSize: '12px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: 'auto', marginRight: '8px', opacity: 0.8 }}>
-                    {m.date || getFormattedDate()}
-                  </span>
-                </div>
+                  </div>
+                );
+              })}
 
-                <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                  {m.isEditing ? (
-                    <button onClick={() => {
-                      if (m.title === '' && m.content === '') {
-                        setMemos(memos.filter(memo => memo.id !== m.id));
-                        setLockedMemos(prev => {
-                          const next = { ...prev };
-                          delete next[m.id];
-                          return next;
-                        });
-                        if (activeMemoId === m.id) setActiveMemoId(null);
-                        
-                        if (socketRef.current) {
-                          socketRef.current.emit('memo:delete', { padId, id: m.id });
-                        }
-                      } else {
-                        setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isEditing: false } : memo));
-                        setLockedMemos(prev => {
-                          const next = { ...prev };
-                          delete next[m.id];
-                          return next;
-                        });
-                        if (socketRef.current) {
-                          socketRef.current.emit('memo:edit-end', { padId, id: m.id });
-                        }
-                      }
-                    }} style={{ border: '1px inset black', background: '#fff', cursor: 'pointer', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', color: '#000000', padding: 0 }}>X</button>
-                  ) : (
-                    <button onClick={() => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo))} style={{ border: '1px inset black', background: '#fff', cursor: 'pointer', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 'bold', color: '#000000', padding: 0 }}>
-                      {m.isExpanded ? '▲' : '▼'}
-                    </button>
-                  )}
-                </div>
-              </div>
+              {memos.map(m => {
+                if (!isMemoVisible(m)) return null;
 
-              <div 
-                style={{ 
-                  flex: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  overflow: 'hidden', 
-                  userSelect: activeMemoId === m.id ? 'text' : 'none' 
-                }}
-              > 
-                {m.isEditing ? (
-                  <form onSubmit={e => { 
-                    e.preventDefault(); 
-                    handlePublish(m.id, e.target.t.value, m.author, e.target.c.value, m.color, e.target.audioFile.files[0], e.target.imageFile.files[0]); 
-                  }} style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%', padding: '10px' }}>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input name="t" placeholder="제목" defaultValue={m.title} required style={{ flex: 1, border: 'none', borderBottom: `1px solid ${borderColor}`, color: m.titleColor || textColor, background: 'none', fontSize: '15px', fontWeight: 'normal', flexShrink: 0, minWidth: 0 }} />
-                        <input 
-                          className="square-color-picker"
-                          type="color" 
-                          style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                          value={m.titleColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                          onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, titleColor: e.target.value } : memo))}
-                          title="제목 색상 변경"
-                        />
+                const textColor = getContrastColor(m.color);
+                const borderColor = textColor === "#ffffff" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+                const isLocked = lockedMemos[m.id] && lockedMemos[m.id] !== lastUsedUser.name;
+
+                return (
+                  <div
+                    id={`memo-${m.id}`}
+                    key={m.id}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      handleBringToFront(m.id);
+                    }}
+                    style={{
+                      position: 'absolute', left: m.x, top: m.y, border: `1px solid ${m.lineColor || '#000000'}`, background: m.color,
+
+                      width: '340px',
+                      minWidth: '340px',
+                      maxWidth: '340px',
+
+                      height: m.isEditing ? 'auto' : (m.isExpanded ? undefined : 'auto'),
+                      minHeight: m.isEditing ? '400px' : (m.isExpanded ? '300px' : 'auto'),
+                      maxHeight: m.isExpanded ? '1000px' : 'max-content',
+
+                      padding: '0',
+                      zIndex: activeMemoId === m.id ? 9999 : (m.z || (m.isExpanded ? 100 : 1)),
+                      borderRadius: '2px', boxShadow: `2px 2px 0px ${m.lineColor || 'rgba(0,0,0,1)'}`, display: 'flex', flexDirection: 'column',
+                      resize: 'none',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div
+                      onPointerDown={e => {
+                        if (e.target.tagName !== 'BUTTON' && scrollRef.current && !isLocked) {
+                          const containerRect = scrollRef.current.getBoundingClientRect();
+                          const canvasX = (e.clientX - containerRect.left + scrollRef.current.scrollLeft - offsetX) / zoomLevel;
+                          const canvasY = (e.clientY - containerRect.top + scrollRef.current.scrollTop - offsetY) / zoomLevel;
+                          setDraggingMemo({ id: m.id, ox: canvasX - m.x, oy: canvasY - m.y });
+                        }
+                      }}
+                      style={{
+                        height: '24px', borderBottom: `1px solid ${m.lineColor || '#000000'}`, display: 'flex',
+                        alignItems: 'center', justifyContent: 'space-between', padding: '0 6px',
+                        cursor: isLocked ? 'not-allowed' : 'grab', backgroundColor: 'rgba(0, 0, 0, 0.26)', flexShrink: 0
+                      }}
+                    >
+                      <div style={{ display: 'flex', flex: 1, alignItems: 'center', minWidth: 0 }}>
+                        {m.author && (
+                          <span style={{ fontSize: '14px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {m.author} {isLocked && `(editing: ${lockedMemos[m.id]})`}
+                          </span>
+                        )}
+                        <span style={{ fontSize: '12px', fontWeight: 'normal', color: m.titleColor || textColor, fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginLeft: 'auto', opacity: 0.8 }}>
+                          {m.date || getFormattedDate()}
+                        </span>
                       </div>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                          <label className="file-upload-label" style={{ 
-                            color: textColor,
-                            border: `1px solid ${borderColor}`,
-                            height: '32px',
-                            boxSizing: 'border-box',
-                            padding: '0 12px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.1)',
-                            borderRadius: '0px',
-                            fontSize: '14px',
-                            cursor: 'pointer'
-                          }}>
-                            <span>소리</span>
-                            <input name="audioFile" id={`audio-input-${m.id}-desktop`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf" 
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const url = URL.createObjectURL(file);
-                                  setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: url, audioFileName: file.name } : memo));
-                                }
-                              }}
-                              style={{ display: 'none' }} 
-                            />
-                          </label>
-                        </div>
 
-                        {m.audioUrl && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '11px', color: textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'bold' }}>
-                              {m.audioFileName}
-                            </span>
-                            <button 
-                              type="button" 
-                              onClick={() => {
-                                setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: null, audioFileName: null } : memo));
-                                const input = document.getElementById(`audio-input-${m.id}-desktop`);
-                                if (input) input.value = '';
-                              }}
-                              className="file-upload-label"
-                              style={{ 
-                                padding: '0 8px', 
-                                height: '24px', 
-                                color: textColor, 
-                                border: `1px solid ${borderColor}`,
-                                cursor: 'pointer',
-                                background: 'rgba(0,0,0,0.1)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0
-                              }}
-                            >
-                              삭제
+
+                    </div>
+
+                    <div
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        userSelect: activeMemoId === m.id ? 'text' : 'none'
+                      }}
+                    >
+                      {m.isEditing ? (
+                        <form onSubmit={e => {
+                          e.preventDefault();
+                          handlePublish(m.id, e.target.t.value, m.author, e.target.c.value, m.color, e.target.audioFile.files[0], e.target.imageFile.files[0]);
+                        }} style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%', padding: '10px' }}>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '4px' }}>
+                              <span style={{ fontWeight: 'bold', fontSize: '12px', color: textColor }}>colors_</span>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                                <span style={{ fontWeight: 'normal' }}>bg</span>
+                                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.color || '#ffffff'} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, color: e.target.value } : memo))} />
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                                <span style={{ fontWeight: 'normal' }}>border</span>
+                                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.lineColor || '#000000'} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, lineColor: e.target.value } : memo))} />
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                                <span style={{ fontWeight: 'normal' }}>font</span>
+                                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.titleColor || m.contentColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, titleColor: e.target.value, contentColor: e.target.value } : memo))} />
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: textColor, cursor: 'pointer' }}>
+                                <span style={{ fontWeight: 'normal' }}>wave</span>
+                                <input type="color" className="square-color-picker" style={{ width: '12px', height: '12px', padding: 0, flexShrink: 0, border: `1px solid ${textColor}` }} value={m.waveformColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, waveformColor: e.target.value } : memo))} />
+                              </label>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input name="t" placeholder="title" defaultValue={m.title} required style={{ flex: 1, border: 'none', borderBottom: `1px solid ${borderColor}`, color: m.titleColor || textColor, background: 'none', fontSize: '15px', fontWeight: 'normal', flexShrink: 0, minWidth: 0 }} />
+                            </div>
+
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+                              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                                <label className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                                  <span>sound</span>
+                                  <input name="audioFile" id={`audio-input-${m.id}-desktop`} type="file" accept="audio/*, .mp3, .wav, .m4a, .caf, .aac, .flac, .ogg, .webm, audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/x-m4a, audio/m4a, audio/mp4, audio/caf, audio/x-caf"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        const url = URL.createObjectURL(file);
+                                        setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: url, audioFileName: file.name } : memo));
+                                      }
+                                    }}
+                                    style={{ display: 'none' }}
+                                  />
+                                </label>
+                              </div>
+
+                              {m.audioUrl && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
+                                  <span style={{ fontSize: '11px', color: m.titleColor || textColor, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, fontWeight: 'normal' }}>
+                                    {m.audioFileName}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setMemos(memos.map(memo => memo.id === m.id ? { ...memo, audioUrl: null, audioFileName: null } : memo));
+                                      const input = document.getElementById(`audio-input-${m.id}-desktop`);
+                                      if (input) input.value = '';
+                                    }}
+                                    className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              )}
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={m.titleColor || m.contentColor || textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                                <label className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                                  <span>scene</span>
+                                  <input name="imageFile" id={`image-input-${m.id}-desktop`} type="file" accept="image/*, .heic, .heif"
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        const ext = file.name.toLowerCase();
+                                        if (ext.endsWith('.heic') || ext.endsWith('.heif')) {
+                                          heic2any({ blob: file, toType: 'image/jpeg' }).then(convertedBlob => {
+                                            const url = URL.createObjectURL(convertedBlob);
+                                            setMemos(prev => prev.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                                          }).catch(console.error);
+                                        } else {
+                                          const url = URL.createObjectURL(file);
+                                          setMemos(prev => prev.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
+                                        }
+                                      }
+                                    }}
+                                    style={{ display: 'none' }}
+                                  />
+                                </label>
+                              </div>
+
+                              {m.imageUrl && (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '10px', color: m.titleColor || textColor, fontWeight: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                      {m.imageFileName}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setMemos(memos.map(memo => memo.id === m.id ? { ...memo, imageUrl: null, imageFileName: null } : memo));
+                                        const input = document.getElementById(`image-input-${m.id}-desktop`);
+                                        if (input) input.value = '';
+                                      }}
+                                      className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}
+                                    >
+                                      삭제
+                                    </button>
+                                  </div>
+                                  <img src={getResolvedImageUrl(m.imageUrl)} alt="Preview" style={{ maxWidth: '100%', objectFit: 'contain', maxHeight: '150px' }} />
+                                </div>
+                              )}
+                            </div>
+
+                            <textarea name="c" placeholder="content" defaultValue={m.content} required className="custom-memo-scrollbar" style={{ border: `1px solid ${borderColor}`, color: m.contentColor || textColor, background: 'transparent', flex: 1, minHeight: '150px', resize: 'none', fontSize: '13px', padding: '14px', '--scrollbar-color': m.lineColor || borderColor || textColor }} />
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
+                            <button type="button" onClick={() => handleCancelEdit(m)} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
+                            <button type="submit" className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                              'done'
                             </button>
                           </div>
-                        )}
-
-                        {m.audioUrl && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} showFileName={false} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                        </form>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                          <div className="custom-memo-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '10px', '--scrollbar-color': m.lineColor || textColor }}>
+                            <div style={{ paddingBottom: '0px', marginBottom: '0px', flexShrink: 0 }}>
+                              <div style={{ fontSize: '15px', fontWeight: 'normal', color: m.titleColor || textColor, marginBottom: '8px' }}>{m.title}</div>
                             </div>
-                            <input 
-                              className="square-color-picker"
-                              type="color" 
-                              style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                              value={m.waveformColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                              onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, waveformColor: e.target.value } : memo))}
-                              title="파장 색상 변경"
-                            />
+
+                            {m.audioUrl && (
+                              <div style={{ marginTop: '5px', marginBottom: '5px' }}>
+                                <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={m.titleColor || m.contentColor || textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
+                              </div>
+                            )}
+
+                            {m.imageUrl && (
+                              <div style={{ marginTop: '5px', marginBottom: '5px' }}>
+                                <div style={{ fontSize: '10px', color: m.titleColor || textColor, fontWeight: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
+                                  {m.imageFileName}
+                                </div>
+                                <img src={getResolvedImageUrl(m.imageUrl)} alt="Uploaded" style={{ width: '100%', objectFit: 'contain', marginBottom: '8px', }} />
+                              </div>
+                            )}
+
+                            {m.content && (
+                              <div style={{ color: m.contentColor || textColor, fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
+                                {m.content}
+                              </div>
+                            )}
                           </div>
-                        )}
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                          <label className="file-upload-label" style={{ 
-                            color: textColor,
-                            border: `1px solid ${borderColor}`,
-                            height: '32px',
-                            boxSizing: 'border-box',
-                            padding: '0 12px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.1)',
-                            borderRadius: '0px',
-                            fontSize: '14px',
-                            cursor: 'pointer'
-                          }}>
-                            <span>장면</span>
-                            <input name="imageFile" id={`image-input-${m.id}-desktop`} type="file" accept="image/*" 
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const url = URL.createObjectURL(file);
-                                  setMemos(memos.map(memo => memo.id === m.id ? { ...memo, imageUrl: url, imageFileName: file.name } : memo));
-                                }
-                              }}
-                              style={{ display: 'none' }} 
-                            />
-                          </label>
-                        </div>
-
-                        {m.imageUrl && (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                              <span style={{ fontSize: '10px', color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                {m.imageFileName}
-                              </span>
-                              <button 
-                                type="button" 
-                                onClick={() => {
-                                  setMemos(memos.map(memo => memo.id === m.id ? { ...memo, imageUrl: null, imageFileName: null } : memo));
-                                  const input = document.getElementById(`image-input-${m.id}-desktop`);
-                                  if (input) input.value = '';
-                                }}
-                                className="file-upload-label"
-                                style={{ 
-                                  padding: '0 8px', 
-                                  height: '24px', 
-                                  color: textColor, 
-                                  border: `1px solid ${borderColor}`,
-                                  cursor: 'pointer',
-                                  background: 'rgba(0,0,0,0.1)',
-                                  fontSize: '10px',
-                                  fontWeight: 'bold',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  flexShrink: 0
-                                }}
-                              >
-                                삭제
-                              </button>
-                            </div>
-                            <img src={getResolvedImageUrl(m.imageUrl)} alt="Preview" style={{ maxWidth: '100%', objectFit: 'contain', maxHeight: '150px' }} />
-                          </div>
-                        )}
-                      </div>
-                      
-                      <textarea name="c" placeholder="내용..." defaultValue={m.content} required style={{ border: `1px solid ${borderColor}`, color: m.contentColor || textColor, background: 'transparent', flex: 1, minHeight: '150px', resize: 'none', fontSize: '13px', padding: '14px' }} />
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', justify: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                      <input 
-                        className="square-color-picker"
-                        type="color" 
-                        style={{ width: '32px', height: '32px', flexShrink: 0 }} 
-                        value={m.contentColor || (textColor === '#ffffff' ? '#ffffff' : '#000000')} 
-                        onChange={(e) => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, contentColor: e.target.value } : memo))}
-                        title="내용 폰트 색상 변경"
-                      />
-                      <button type="submit" className="file-upload-label" style={{
-                        color: textColor,
-                        border: `1px solid ${borderColor}`,
-                        height: '32px',
-                        boxSizing: 'border-box',
-                        padding: '0 20px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0,0,0,0.1)',
-                        borderRadius: '0px'
-                      }}>
-                        {(m.title === '' && m.content === '') ? '쓰기' : '완료'}
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-                    <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-                      <div style={{ paddingBottom: '0px', marginBottom: '0px', flexShrink: 0 }}>
-                        <div style={{ fontSize: '15px', fontWeight: 'normal', color: m.titleColor || textColor, marginBottom: '8px' }}>{m.title}</div>
-                      </div>
-
-                      {m.audioUrl && (
-                        <div style={{ marginTop: '5px', marginBottom: '5px' }}>
-                          <WaveformPlayer memoId={m.id} audioUrl={getResolvedAudioUrl(m.audioUrl)} fileName={m.audioFileName || ''} textColor={textColor} customColor={m.waveformColor} peaks={m.waveformPeaks} onPlayStateChange={(isPlaying) => handlePlayStateChange(m.id, isPlaying)} />
-                        </div>
-                      )}
-                      
-                      {m.imageUrl && (
-                        <div style={{ marginTop: '5px', marginBottom: '5px' }}>
-                          <div style={{ fontSize: '10px', color: textColor, fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
-                            {m.imageFileName}
-                          </div>
-                          <img src={getResolvedImageUrl(m.imageUrl)} alt="Uploaded" style={{ width: '100%', objectFit: 'contain', marginBottom: '8px', }} />
-                        </div>
-                      )}
-                      
-                      {m.isExpanded && (
-                        <div style={{ color: m.contentColor || textColor, fontSize: '13px', lineHeight: '1.6', wordBreak: 'break-all', whiteSpace: 'pre-wrap', marginTop: '10px' }}>
-                          {m.content}
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'transparent', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                      <button 
-                        onClick={() => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo))}
-                        style={{ 
-                          background: 'none', 
-                          border: 'none', 
-                          cursor: 'pointer', 
-                          fontSize: '13px', 
-                          color: textColor, 
-                          textDecoration: 'none',
-                          padding: 0,
-                          fontWeight: 'normal',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        comments ({comments.filter(c => c.memoId === m.id).length})
-                      </button>
-
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        {isLocked ? (
-                          <span style={{ fontSize: '13px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
-                            {lockedMemos[m.id]} is editing...
-                          </span>
-                        ) : (
-                          <>
-                            <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: textColor, textDecoration: 'none', padding: 0, fontFamily: 'inherit', fontWeight: 'normal' }}>edit</button>
-                            <button 
-                              onClick={() => handleDeleteMemo(m.id)} 
-                              style={{ 
-                                background: deleteConfirmMemoId === m.id ? (isReddish(m.color) ? '#000000' : '#d9534f') : 'none', 
-                                border: 'none', 
-                                cursor: 'pointer', 
-                                fontSize: '13px', 
-                                color: deleteConfirmMemoId === m.id ? 'white' : textColor, 
-                                padding: deleteConfirmMemoId === m.id ? '2px 6px' : '0',
-                                borderRadius: '0px',
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: 'transparent', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isExpanded: !memo.isExpanded } : memo))}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                color: m.titleColor || textColor,
                                 textDecoration: 'none',
+                                padding: 0,
                                 fontWeight: 'normal',
-                                transition: 'all 0.2s',
                                 fontFamily: 'inherit'
                               }}
                             >
-                              {deleteConfirmMemoId === m.id ? 'confirm' : 'delete'}
+                              comments ({comments.filter(c => c.memoId === m.id).length})
                             </button>
-                          </>
-                        )}
-                      </div>
+
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                              {isLocked ? (
+                                <span style={{ fontSize: '13px', color: textColor, opacity: 0.8, fontStyle: 'italic' }}>
+                                  {lockedMemos[m.id]} is editing...
+                                </span>
+                              ) : (
+                                <>
+                                  <button onClick={() => handleEditMemo(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: m.titleColor || textColor, textDecoration: 'none', padding: 0, fontFamily: 'inherit', fontWeight: 'normal' }}>edit</button>
+                                  <button
+                                    onClick={() => handleDeleteMemo(m.id)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      fontSize: '13px',
+                                      color: m.titleColor || textColor,
+                                      padding: '0',
+                                      textDecoration: 'none',
+                                      fontWeight: 'normal',
+                                      fontFamily: 'inherit'
+                                    }}
+                                  >
+                                    delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {m.isExpanded && renderCommentsSection(m, textColor, borderColor)}
+                        </div>
+                      )}
                     </div>
-                    {m.isExpanded && renderCommentsSection(m, textColor, borderColor)}
                   </div>
-                )}
-              </div>
-            </div>
-            );
-          })}
-        </main>
+                );
+              })}
+            </main>
           </div>
         </div>
       </div>
 
       {/* Master Out Mixer Panel (MAIN) */}
-      <div 
+      <div
         onPointerDown={(e) => e.stopPropagation()}
         style={{
           position: 'fixed',
@@ -2440,25 +2258,25 @@ export default function Board() {
           <span style={{ fontSize: '12px', fontWeight: 'bold', letterSpacing: '0.2px' }}>main</span>
 
           {/* LED Indicator Dot */}
-          <div style={{ 
-            width: '8px', 
-            height: '8px', 
-            borderRadius: '50%', 
-            backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888', 
-            transition: 'background-color 0.2s', 
-            animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none' 
+          <div style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: playingMemoIds.size > 0 ? '#ff3b30' : '#888',
+            transition: 'background-color 0.2s',
+            animation: playingMemoIds.size > 0 ? 'minimap-blink 1s infinite' : 'none'
           }}></div>
-          
+
           {/* Buttons Section */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             {/* Play/Pause Button */}
-            <button 
+            <button
               onClick={handleMasterPlayPause}
               disabled={playingMemoIds.size === 0 && !hasPausedAudios}
               style={{
                 background: 'none',
                 border: '1px solid #000000',
-                borderRadius: '0px',
+                borderRadius: '2px',
                 cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
                 opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
                 width: '24px',
@@ -2473,15 +2291,15 @@ export default function Board() {
             >
               {playingMemoIds.size > 0 ? '⏸' : '▶'}
             </button>
-            
+
             {/* Stop Button */}
-            <button 
+            <button
               onClick={handleMasterStop}
               disabled={playingMemoIds.size === 0 && !hasPausedAudios}
               style={{
                 background: 'none',
                 border: '1px solid #000000',
-                borderRadius: '0px',
+                borderRadius: '2px',
                 cursor: (playingMemoIds.size > 0 || hasPausedAudios) ? 'pointer' : 'not-allowed',
                 opacity: (playingMemoIds.size > 0 || hasPausedAudios) ? 1 : 0.4,
                 width: '24px',
@@ -2501,7 +2319,7 @@ export default function Board() {
           {/* Volume Slider Section */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', position: 'relative' }}>
             <span style={{ fontSize: '9px', fontWeight: 'bold', opacity: 0.8 }}>1</span>
-            <input 
+            <input
               type="range"
               min="0" max="1" step="0.01"
               value={masterVolume}
@@ -2518,7 +2336,7 @@ export default function Board() {
       </div>
 
       {/* Standalone Minimap Wrapper */}
-      <div 
+      <div
         ref={minimapRef}
         onPointerDown={handleMinimapPointerDown}
         style={{
@@ -2529,7 +2347,7 @@ export default function Board() {
           transformOrigin: 'bottom right',
           zIndex: 2000,
           width: `${MINIMAP_SIZE}px`,
-          height: `${MINIMAP_SIZE}px`, 
+          height: `${MINIMAP_SIZE}px`,
           border: '1px solid',
           borderTopColor: '#ffffff',
           borderLeftColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#f0f0f0' : '#f8f8f8',
@@ -2555,18 +2373,33 @@ export default function Board() {
           left: ((scrollPos.left - offsetX) / zoomLevel) * scaleRate, top: ((scrollPos.top - offsetY) / zoomLevel) * scaleRate,
           width: (viewportSize.width / zoomLevel) * scaleRate, height: (viewportSize.height / zoomLevel) * scaleRate,
           border: '1px solid red', backgroundColor: 'rgba(255, 0, 0, 0.1)',
-          pointerEvents: 'none' 
+          pointerEvents: 'none'
         }} />
       </div>
 
       <div onPointerDown={(e) => e.stopPropagation()} style={{ position: 'fixed', bottom: '20px', left: '50%', transform: `translateX(-50%) scale(${uiScale})`, transformOrigin: 'bottom center', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto' }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          padding: '4px 10px', 
-          width: '250px', 
-          height: '40px', 
+        {uploadProgressLog && (
+          <div style={{
+            marginBottom: '8px',
+            padding: '4px 12px',
+            background: 'rgba(0, 0, 0, 0.5)',
+            color: '#fff',
+            borderRadius: '2px',
+            fontSize: '10px',
+            fontWeight: 'normal',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap'
+          }}>
+            {uploadProgressLog}
+          </div>
+        )}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px 10px',
+          width: '250px',
+          height: '40px',
           boxSizing: 'border-box',
           border: '1px solid',
           borderTopColor: '#ffffff',
@@ -2576,43 +2409,43 @@ export default function Board() {
           borderBottomColor: isWhiteOrVeryLight(outerBgColor || '#E0E0D0') ? '#a8a8a8' : '#b0b0b0',
           boxShadow: '2px 2px 5px rgba(0,0,0,0.15)'
         }}>
-        {(() => {
-          const zoomStages = [minZoom, minZoom + (1.0 - minZoom) * 0.5, 1.0, 1.5];
-          let currentStage = 0;
-          let minDiff = Infinity;
-          zoomStages.forEach((val, i) => {
-            const diff = Math.abs(val - zoomLevel);
-            if (diff < minDiff) { minDiff = diff; currentStage = i; }
-          });
-          
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-              <div style={{ position: 'relative', width: '100%', height: '14px', display: 'flex', alignItems: 'center' }}>
-                <input 
-                  type="range" 
-                  className="custom-zoom-slider"
-                  min="0" max="3" step="1" 
-                  value={currentStage}
-                  onChange={(e) => handleZoomChange(zoomStages[e.target.value])}
-                  style={{ width: '100%', position: 'relative', zIndex: 2 }}
-                />
-                {/* 슬라이더 트랙 아래에 배치되어 비쳐 보이는 4단계 눈금선들 */}
-                <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', height: '6px', pointerEvents: 'none', display: 'flex', justifyContent: 'space-between', padding: '0 5px', boxSizing: 'border-box', zIndex: 1 }}>
-                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
-                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
-                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
-                  <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+          {(() => {
+            const zoomStages = [minZoom, minZoom + (1.0 - minZoom) * 0.5, 1.0, 1.5];
+            let currentStage = 0;
+            let minDiff = Infinity;
+            zoomStages.forEach((val, i) => {
+              const diff = Math.abs(val - zoomLevel);
+              if (diff < minDiff) { minDiff = diff; currentStage = i; }
+            });
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                <div style={{ position: 'relative', width: '100%', height: '14px', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type="range"
+                    className="custom-zoom-slider"
+                    min="0" max="3" step="1"
+                    value={currentStage}
+                    onChange={(e) => handleZoomChange(zoomStages[e.target.value])}
+                    style={{ width: '100%', position: 'relative', zIndex: 2 }}
+                  />
+                  {/* 슬라이더 트랙 아래에 배치되어 비쳐 보이는 4단계 눈금선들 */}
+                  <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', transform: 'translateY(-50%)', height: '6px', pointerEvents: 'none', display: 'flex', justifyContent: 'space-between', padding: '0 5px', boxSizing: 'border-box', zIndex: 1 }}>
+                    <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                    <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                    <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                    <div style={{ width: '1px', height: '6px', backgroundColor: '#000', opacity: 0.6 }}></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
         </div>
       </div>
 
       {/* Delete Confirmation Modal */}
       {deletePromptMemoId && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -2626,12 +2459,9 @@ export default function Board() {
             alignItems: 'center',
             justifyContent: 'center'
           }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            setDeletePromptMemoId(null);
-          }}
+          onPointerDown={(e) => e.stopPropagation()}
         >
-          <div 
+          <div
             style={{
               background: '#e8e8e8',
               border: '1px solid #000',
@@ -2649,7 +2479,7 @@ export default function Board() {
               are you sure?
             </div>
             <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
-              <button 
+              <button
                 onClick={() => {
                   performDeleteMemo(deletePromptMemoId);
                   setDeletePromptMemoId(null);
@@ -2669,7 +2499,7 @@ export default function Board() {
               >
                 yes
               </button>
-              <button 
+              <button
                 onClick={() => setDeletePromptMemoId(null)}
                 style={{
                   flex: 1,
@@ -2693,7 +2523,7 @@ export default function Board() {
 
       {/* Comment Delete Confirmation Modal */}
       {deletePromptCommentId && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -2707,12 +2537,9 @@ export default function Board() {
             alignItems: 'center',
             justifyContent: 'center'
           }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            setDeletePromptCommentId(null);
-          }}
+          onPointerDown={(e) => e.stopPropagation()}
         >
-          <div 
+          <div
             style={{
               background: '#e8e8e8',
               border: '1px solid #000',
@@ -2730,7 +2557,7 @@ export default function Board() {
               are you sure?
             </div>
             <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
-              <button 
+              <button
                 onClick={() => {
                   handleDeleteComment(deletePromptCommentId);
                   setDeletePromptCommentId(null);
@@ -2750,7 +2577,7 @@ export default function Board() {
               >
                 yes
               </button>
-              <button 
+              <button
                 onClick={() => setDeletePromptCommentId(null)}
                 style={{
                   flex: 1,

@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import sharp from 'sharp';
+import heicConvert from 'heic-convert';
 
 // Load environment variables
 dotenv.config();
@@ -20,12 +21,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const execPromise = promisify(exec);
 
 // Helper function to check audio codec and transcode if needed (e.g., ALAC -> AAC, CAF -> M4A)
-async function checkAndTranscodeAudio(file) {
+async function checkAndTranscodeAudio(file, log = () => {}) {
   const filePath = file.path;
   const ext = path.extname(filePath).toLowerCase();
   
   // 1. If it's a .caf file, transcode it to .m4a (standard AAC)
   if (ext === '.caf') {
+    log('Transcoding .caf to M4A...');
     console.log(`.caf audio detected. Transcoding to M4A...`);
     const newFilename = file.filename.replace(/\.caf$/i, '.m4a');
     const newFilePath = path.join(path.dirname(filePath), newFilename);
@@ -55,6 +57,7 @@ async function checkAndTranscodeAudio(file) {
       const codec = stdout.trim();
       
       if (codec === 'alac') {
+        log('Transcoding ALAC to AAC...');
         console.log(`ALAC audio detected inside M4A. Transcoding to AAC...`);
         const tempPath = filePath + '.tmp.m4a';
         const ffmpegCmd = `ffmpeg -y -i "${filePath}" -c:a aac -b:a 192k "${tempPath}"`;
@@ -71,6 +74,7 @@ async function checkAndTranscodeAudio(file) {
 
   // 3. If it's a wav, flac, aif, or aiff file, transcode it to mp3 (standard compressed)
   if (['.wav', '.flac', '.aif', '.aiff'].includes(ext)) {
+    log(`Transcoding ${ext} to MP3...`);
     console.log(`${ext} audio detected. Transcoding to MP3...`);
     const newFilename = file.filename.replace(new RegExp(`${ext}$`, 'i'), '.mp3');
     const newFilePath = path.join(path.dirname(filePath), newFilename);
@@ -96,9 +100,10 @@ async function checkAndTranscodeAudio(file) {
 }
 
 // Extract peaks (0-1 float array) and duration using ffmpeg & ffprobe
-async function extractPeaksAndDuration(filePath) {
+async function extractPeaksAndDuration(filePath, log = () => {}) {
   try {
     // 1. Get audio duration with ffprobe
+    log("Extracting waveform data...");
     const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
     const { stdout } = await execPromise(ffprobeCmd);
     const duration = parseFloat(stdout.trim());
@@ -179,22 +184,44 @@ async function extractPeaksAndDuration(filePath) {
 }
 
 // Resize image to max 800px width and convert to WebP using sharp
-async function processImage(file) {
+async function processImage(file, log = () => {}) {
   const filePath = file.path;
   const ext = path.extname(filePath).toLowerCase();
   
-  if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+  if (['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].includes(ext)) {
+    let sourceFilePath = filePath;
+    if (ext === '.heic' || ext === '.heif') {
+      const jpgPath = filePath + '.jpg';
+      try {
+        const inputBuffer = await fs.promises.readFile(filePath);
+        const outputBuffer = await heicConvert({
+          buffer: inputBuffer,
+          format: 'JPEG',
+          quality: 1
+        });
+        await fs.promises.writeFile(jpgPath, outputBuffer);
+        sourceFilePath = jpgPath;
+      } catch (err) {
+        console.error('Error converting HEIC to JPG with heic-convert:', err);
+        // Fallback or skip if conversion fails
+      }
+    }
+
     const newFilename = file.filename.substring(0, file.filename.length - ext.length) + '.webp';
     const newFilePath = path.join(path.dirname(filePath), newFilename);
     
     try {
-      await sharp(filePath)
+      await sharp(sourceFilePath)
+        .rotate()
         .resize({ width: 800, withoutEnlargement: true })
         .webp({ quality: 80 })
         .toFile(newFilePath);
       
-      // Delete original image file
-      await fs.promises.unlink(filePath);
+      // Delete original image file(s)
+      await fs.promises.unlink(filePath).catch(() => {});
+      if (sourceFilePath !== filePath) {
+        await fs.promises.unlink(sourceFilePath).catch(() => {});
+      }
       
       // Update file object properties
       file.path = newFilePath;
@@ -408,14 +435,38 @@ app.get('/api/pads', async (req, res) => {
       GROUP BY p.id
     `);
 
-    // Sort in JS to handle both unpadded (e.g. YYYY.M.D) and padded dates correctly chronologically (descending)
     const parseCustomDate = (dateStr) => {
       if (!dateStr) return 0;
       const normalized = dateStr.replace(/\./g, '-');
       const d = new Date(normalized);
       return isNaN(d.getTime()) ? 0 : d.getTime();
     };
-    rows.sort((a, b) => parseCustomDate(b.date) - parseCustomDate(a.date));
+
+    const memosData = await db.all('SELECT padId, author, date, id FROM memos');
+    const lastMemoByPad = {};
+    for (const m of memosData) {
+      const parsedDate = parseCustomDate(m.date);
+      if (!lastMemoByPad[m.padId]) {
+        lastMemoByPad[m.padId] = { ...m, parsedDate };
+      } else {
+        if (parsedDate > lastMemoByPad[m.padId].parsedDate || (parsedDate === lastMemoByPad[m.padId].parsedDate && m.id > lastMemoByPad[m.padId].id)) {
+          lastMemoByPad[m.padId] = { ...m, parsedDate };
+        }
+      }
+    }
+
+    for (const row of rows) {
+      const lastMemo = lastMemoByPad[row.id];
+      if (lastMemo) {
+        row.lastAuthor = lastMemo.author;
+        row.lastDate = lastMemo.date;
+      } else {
+        row.lastAuthor = null;
+        row.lastDate = row.date;
+      }
+    }
+
+    rows.sort((a, b) => parseCustomDate(b.lastDate || b.date) - parseCustomDate(a.lastDate || a.date));
 
     res.json(rows);
   } catch (error) {
@@ -529,6 +580,15 @@ app.delete('/api/pads/:padId', async (req, res) => {
 
 // File upload endpoint
 app.post('/api/upload', upload.single('file'), async (req, res) => {
+  const socketId = req.body.socketId;
+  console.log('Upload received. socketId:', socketId);
+  const log = (msg) => {
+    console.log('log called with:', msg, 'socketId:', socketId, 'io exists:', typeof io !== 'undefined');
+    if (socketId && typeof io !== 'undefined') {
+      console.log('emitting socket event to', socketId, ':', msg);
+      io.to(socketId).emit('upload:log', msg);
+    }
+  };
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
@@ -543,20 +603,23 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     const ext = path.extname(req.file.originalname).toLowerCase();
     if (req.file.mimetype.startsWith('audio/') || ['.m4a', '.caf', '.mp3', '.wav', '.ogg', '.aac', '.flac'].includes(ext)) {
       isAudio = true;
-      const transcodeResult = await checkAndTranscodeAudio(req.file);
+      log('Checking audio format...');
+      const transcodeResult = await checkAndTranscodeAudio(req.file, log);
       if (transcodeResult && transcodeResult.originalNameExtension) {
         // Update original filename extension to match transcoded file
         const originalExt = path.extname(originalName);
         originalName = originalName.substring(0, originalName.length - originalExt.length) + transcodeResult.originalNameExtension;
       }
-    } else if (req.file.mimetype.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
+    } else if (req.file.mimetype.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].includes(ext)) {
       isImage = true;
-      const imageResult = await processImage(req.file);
+      log('Checking image format...');
+      const imageResult = await processImage(req.file, log);
       if (imageResult && imageResult.originalNameExtension) {
         // Update original filename extension to match webp image
         const originalExt = path.extname(originalName);
         originalName = originalName.substring(0, originalName.length - originalExt.length) + imageResult.originalNameExtension;
       }
+      log("Saving to disk...");
     }
   } catch (err) {
     console.error('Failed to process/transcode uploaded file:', err);
@@ -569,7 +632,8 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   let waveformPeaks = null;
   if (isAudio) {
     try {
-      waveformPeaks = await extractPeaksAndDuration(req.file.path);
+      waveformPeaks = await extractPeaksAndDuration(req.file.path, log);
+      log("Saving to disk...");
     } catch (err) {
       console.error('Failed to extract audio peaks on upload:', err);
     }
