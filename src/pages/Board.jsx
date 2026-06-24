@@ -1319,7 +1319,23 @@ export default function Board() {
                           'done'
                         </button>
                       </div>
-                    </form>
+                      {/* Footer controls */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              marginTop: '4px',
+              flexShrink: 0
+            }}>
+              <button type="button" onPointerDown={(e) => { e.preventDefault(); handleCancelEdit(m); }} className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal', marginRight: '6px' }}>cancel</button>
+              <button
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleSubmitMemo({ preventDefault: () => {} }, m.id); }}
+                className="file-upload-label" style={{ padding: '1px 8px', fontSize: '12px', fontWeight: 'normal', border: `1px solid ${m.lineColor || textColor}`, background: 'rgba(0, 0, 0, 0.1)', color: m.titleColor || textColor, cursor: 'pointer', borderRadius: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'normal' }}>
+                done
+              </button>
+            </div>
+          </form>
                   ) : (
                     <>
                       <div className="mobile-memo-title" style={{ color: m.titleColor || textColor }}>{m.title}</div>
@@ -1403,10 +1419,12 @@ export default function Board() {
           WebkitBackdropFilter: 'blur(5px)',
           zIndex: 9999,
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'center',
           padding: '16px',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch'
         }}
       >
         <div
@@ -1419,11 +1437,10 @@ export default function Board() {
             transform: 'translate(-1px, -1px)',
             width: '100%',
             maxWidth: '450px',
-            maxHeight: '90vh',
             display: 'flex',
             flexDirection: 'column',
             boxSizing: 'border-box',
-            overflow: 'hidden'
+            margin: '40px auto'
           }}
         >
           {/* Top Header of Editing Overlay */}
@@ -1431,33 +1448,53 @@ export default function Board() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '10px 16px',
+            padding: '6px 12px',
             borderBottom: `1px solid ${borderColor}`,
             color: textColor,
             flexShrink: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.18)'
           }}>
-            <button
-              type="button"
-              onPointerDown={(e) => { e.preventDefault(); handleCancelEdit(m); }}
-              style={{
-                background: 'none', border: 'none', color: textColor, fontSize: '14px', padding: '4px 8px', margin: 0, cursor: 'pointer', outline: 'none'
-              }}
-            >cancel</button>
             <span style={{ fontSize: '12px', fontFamily: 'monospace', opacity: 0.8 }}>
               {m.date || getFormattedDate()}
             </span>
             <button
               type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                const form = document.getElementById(`mobile-form-${m.id}`);
-                if (form) form.requestSubmit();
+              onClick={() => {
+                if (m.title === '' && m.content === '') {
+                  setMemos(memos.filter(memo => memo.id !== m.id));
+                  setLockedMemos(prev => {
+                    const next = { ...prev };
+                    delete next[m.id];
+                    return next;
+                  });
+                  if (activeMemoId === m.id) setActiveMemoId(null);
+                  if (socketRef.current) {
+                    socketRef.current.emit('memo:delete', { padId, id: m.id });
+                  }
+                } else {
+                  setMemos(memos.map(memo => memo.id === m.id ? { ...memo, isEditing: false } : memo));
+                  setLockedMemos(prev => {
+                    const next = { ...prev };
+                    delete next[m.id];
+                    return next;
+                  });
+                  if (socketRef.current) {
+                    socketRef.current.emit('memo:edit-end', { padId, id: m.id });
+                  }
+                }
               }}
               style={{
-                background: 'none', border: 'none', color: textColor, fontSize: '14px', fontWeight: 'bold', padding: '4px 8px', margin: 0, cursor: 'pointer', outline: 'none'
+                background: 'none',
+                border: 'none',
+                color: 'inherit',
+                fontSize: '11px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                padding: '4px 8px'
               }}
-            >done</button>
+            >
+              X
+            </button>
           </header>
 
           {/* Form Body */}
@@ -1468,15 +1505,11 @@ export default function Board() {
               handlePublish(m.id, e.target.t.value, m.author, e.target.c.value, m.color, e.target.audioFile.files[0], e.target.imageFile.files[0]);
             }}
             style={{
-              flex: 1,
               display: 'flex',
               flexDirection: 'column',
               gap: '16px',
               padding: '16px',
-              boxSizing: 'border-box',
-              overflowY: 'auto',
-              maxHeight: 'calc(90vh - 45px)',
-              minHeight: 0
+              boxSizing: 'border-box'
             }}
           >
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -1616,10 +1649,18 @@ export default function Board() {
               placeholder="content"
               defaultValue={m.content}
               required
-              className="custom-memo-scrollbar"
+              onInput={(e) => {
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              }}
+              ref={(el) => {
+                if (el && !el.dataset.resized) {
+                  el.style.height = 'auto';
+                  el.style.height = Math.max(150, el.scrollHeight) + 'px';
+                  el.dataset.resized = 'true';
+                }
+              }}
               style={{
-                '--scrollbar-color': m.lineColor || borderColor || textColor,
-                flex: 1,
                 width: '100%',
                 minHeight: '150px',
                 backgroundColor: 'transparent',
@@ -1630,7 +1671,8 @@ export default function Board() {
                 padding: '10px',
                 boxSizing: 'border-box',
                 resize: 'none',
-                outline: 'none'
+                outline: 'none',
+                overflow: 'hidden'
               }}
             />
 
