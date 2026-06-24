@@ -2459,7 +2459,6 @@ export default function Board() {
             alignItems: 'center',
             justifyContent: 'center'
           }}
-          onPointerDown={(e) => e.stopPropagation()}
         >
           <div
             style={{
@@ -2473,7 +2472,6 @@ export default function Board() {
               alignItems: 'center',
               gap: '20px'
             }}
-            onPointerDown={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', fontFamily: 'monospace', textAlign: 'center' }}>
               are you sure?
@@ -2537,7 +2535,6 @@ export default function Board() {
             alignItems: 'center',
             justifyContent: 'center'
           }}
-          onPointerDown={(e) => e.stopPropagation()}
         >
           <div
             style={{
@@ -2551,7 +2548,6 @@ export default function Board() {
               alignItems: 'center',
               gap: '20px'
             }}
-            onPointerDown={(e) => e.stopPropagation()}
           >
             <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', fontFamily: 'monospace', textAlign: 'center' }}>
               are you sure?
