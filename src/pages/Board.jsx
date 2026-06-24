@@ -1014,7 +1014,10 @@ export default function Board() {
     }
 
     if (isMobile) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      const isNewMemo = currentMemo && currentMemo.title === '' && currentMemo.content === '';
+      if (isNewMemo) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   };
 
