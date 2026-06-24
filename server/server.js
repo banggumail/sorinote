@@ -423,6 +423,11 @@ app.post('/api/settings', async (req, res) => {
 });
 
 app.get('/api/pads', async (req, res) => {
+  // Prevent browser caching for the pad list
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  
   try {
     const db = await getDb();
     const rows = await db.all(`
